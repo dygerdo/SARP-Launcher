@@ -7,6 +7,9 @@ import { resolve } from "node:path"
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   if (env.DEV_GTA_PATH) process.env.DEV_GTA_PATH = env.DEV_GTA_PATH
+  if (env.VITE_GAME_CACHE_FOLDER) {
+    process.env.VITE_GAME_CACHE_FOLDER = env.VITE_GAME_CACHE_FOLDER
+  }
 
   return {
     resolve: {

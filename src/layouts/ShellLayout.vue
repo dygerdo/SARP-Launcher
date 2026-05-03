@@ -14,7 +14,7 @@ defineSlots<{
     class="relative h-screen w-screen overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
   >
     <div
-      class="pointer-events-none absolute inset-0 bg-[url('/background.png')] bg-cover bg-top opacity-[0.18] mix-blend-screen"
+      class="pointer-events-none absolute inset-0 bg-[url('/background.png')] bg-cover bg-top opacity-[0.35] mix-blend-screen"
     />
 
     <div

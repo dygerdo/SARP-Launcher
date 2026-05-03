@@ -251,3 +251,15 @@ Los users que ya tenían v6 detectan que `local !== manifest`, vuelven a v5. Si 
    - Si alguien interceptara el tráfico (MITM), podría servir un manifest falso con una URL maliciosa de `samp.exe`.
    - Mitigaciones simples: HTTPS estricto + verificación de SHA256 (ya prevista) + comparar dominio del `url` contra `VITE_CDN_URL` antes de descargar.
    - **Recomendación**: para v1 alcanza con HTTPS + SHA256. Firmar el manifest es over-engineering por ahora.
+4. **¿Distribuimos el instalador de SA:MP o solo el `samp.exe` final?**
+   - Hay dos archivos distintos:
+     - `samp03DLR1_install.exe` (~2.5 MB) — instalador wizard NSIS oficial.
+     - `samp.exe` (~1 MB) — el cliente que efectivamente se conecta al servidor.
+   - Distribuir el instalador → instala correctamente DLLs + folder `SAMP/`, pero requiere que el usuario corra otro wizard (mala UX).
+   - Distribuir solo el `samp.exe` → asume que el usuario ya tiene SA:MP instalado (entonces ¿para qué descargarlo?) o necesitamos también enviar las DLLs y `SAMP/` aparte.
+   - **Por resolver**: probablemente el approach correcto es bundlear `samp.exe` + DLLs + carpeta `SAMP/` en un `.zip` y extraerlo silenciosamente. Investigar qué pone exactamente el instalador oficial cuando termina, y replicarlo desde el launcher.
+5. **Granularidad del check "SA:MP instalado"**
+   - ¿Solo verifica `samp.exe`? ¿También DLLs (`samp.dll`, `vorbisFile.dll`)? ¿También carpeta `SAMP/`?
+   - Definir junto con la decisión #4.
+6. **Versionado de SA:MP**: ¿una sola versión del bundle completo (`samp.exe` + DLLs + `SAMP/`), o versionar `samp.exe` aparte de los assets?
+   - **Recomendación tentativa**: bundle único versionado, simplifica todo.

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
 import ShellLayout from "@/layouts/ShellLayout.vue"
-import LogoMark from "@/components/loading/LogoMark.vue"
+import LogoMark from "@/components/brand/LogoMark.vue"
 import ProgressBar from "@/components/loading/ProgressBar.vue"
 import { useProgressBar } from "@/composables/useProgressBar"
 
@@ -16,7 +16,7 @@ onMounted(() => {
 
 <template>
   <ShellLayout>
-    <LogoMark />
+    <LogoMark size="xl" wordmark />
 
     <div class="mt-16 w-full max-w-md">
       <ProgressBar :value="progress" />

@@ -1,18 +1,35 @@
 <script setup lang="ts">
-//
+withDefaults(
+  defineProps<{
+    size?: "sm" | "md" | "lg" | "xl"
+    wordmark?: boolean
+  }>(),
+  {
+    size: "lg",
+    wordmark: false,
+  },
+)
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-4">
+  <div class="flex shrink-0 flex-col items-center gap-3">
     <div class="logo-shimmer relative">
       <img
         src="/logo.png"
         alt="SARP"
-        class="relative h-44 w-auto select-none drop-shadow-[0_6px_28px_rgba(0,0,0,0.55)]"
+        class="relative w-auto select-none drop-shadow-[0_6px_28px_rgba(0,0,0,0.55)]"
+        :class="{
+          'h-12': size === 'sm',
+          'h-20': size === 'md',
+          'h-32': size === 'lg',
+          'h-44': size === 'xl',
+        }"
         draggable="false"
       />
     </div>
-    <p class="text-xs font-medium uppercase tracking-[0.4em] text-white/70">San Andreas Roleplay</p>
+    <p v-if="wordmark" class="text-xs font-medium uppercase tracking-[0.4em] text-white/70">
+      San Andreas Roleplay
+    </p>
   </div>
 </template>
 

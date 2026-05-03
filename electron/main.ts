@@ -2,6 +2,7 @@ import { app, BrowserWindow } from "electron"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { registerIpcHandlers } from "./ipc/handlers"
+import { detectRunningGame } from "./services/launcher"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -18,10 +19,10 @@ function createWindow() {
   win = new BrowserWindow({
     title: "San Andreas Roleplay - SA:MP Launcher",
     icon: ICON_PATH,
-    width: 1100,
-    height: 700,
+    width: 960,
+    height: 860,
     minWidth: 900,
-    minHeight: 600,
+    minHeight: 800,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
@@ -40,6 +41,7 @@ function createWindow() {
 app.whenReady().then(() => {
   registerIpcHandlers()
   createWindow()
+  detectRunningGame()
 })
 
 app.on("window-all-closed", () => {
