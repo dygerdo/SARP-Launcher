@@ -62,7 +62,17 @@ const TAGLINES = [
   "Pigeon es más friki que Zero, y eso es decir mucho.",
 ] as const
 
+let bag: string[] = []
+let lastSeen: string | null = null
+
 export function randomTagline(): string {
-  const i = Math.floor(Math.random() * TAGLINES.length)
-  return TAGLINES[i]
+  if (bag.length === 0) {
+    bag = [...TAGLINES].sort(() => Math.random() - 0.5)
+    if (bag[0] === lastSeen && bag.length > 1) {
+      ;[bag[0], bag[1]] = [bag[1], bag[0]]
+    }
+  }
+  const tag = bag.pop()!
+  lastSeen = tag
+  return tag
 }
