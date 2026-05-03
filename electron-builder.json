@@ -6,6 +6,7 @@
     "buildResources": "build"
   },
   "files": ["dist", "dist-electron"],
+  "electronLanguages": ["es-419", "en-US"],
   "extraResources": [
     {
       "from": "public/favicon.ico",
@@ -29,7 +30,7 @@
   },
   "nsis": {
     "oneClick": false,
-    "perMachine": false,
+    "perMachine": true,
     "allowToChangeInstallationDirectory": true,
     "allowElevation": true,
     "deleteAppDataOnUninstall": false,
