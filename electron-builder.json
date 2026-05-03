@@ -1,0 +1,34 @@
+{
+  "appId": "es.sarp.launcher",
+  "productName": "SARP Launcher",
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": [
+    "dist",
+    "dist-electron"
+  ],
+  "publish": {
+    "provider": "generic",
+    "url": "https://sarp-public.b-cdn.net/launcher/"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "publisherName": "San Andreas Roleplay",
+    "artifactName": "SARP-Launcher-Setup-${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDir": true,
+    "deleteAppDataOnUninstall": false,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "SARP Launcher"
+  }
+}
