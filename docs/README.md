@@ -4,8 +4,8 @@ Documentos técnicos y de planificación. Acá vive todo lo que **no es código*
 
 | Documento                                  | Resumen                                                                                                |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| [manifest.md](./manifest.md)               | Estructura del CDN (Bunny) + endpoint `/api/public/launcher/manifest` + casos de uso operativos.       |
-| [loading-screen.md](./loading-screen.md)   | Plan completo del loading screen: tareas por tier, decisiones de diseño, arquitectura, plan por pasos. |
+| [manifest.md](./manifest.md)             | Estructura del CDN (Bunny) + endpoint `/api/public/launcher/manifest` + casos de uso operativos.       |
+| [loading-screen.md](./loading-screen.md) | Plan completo del loading screen: tareas por tier, decisiones de diseño, arquitectura, plan por pasos. |
 
 ## Convenciones
 

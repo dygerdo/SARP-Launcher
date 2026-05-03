@@ -10,6 +10,7 @@ export const IPC = {
   WINDOW_MINIMIZE: "window:minimize",
   WINDOW_CLOSE: "window:close",
   SHELL_OPEN_EXTERNAL: "shell:open-external",
+  SERVER_PING: "server:ping",
 } as const
 
 export interface GameStatus {

@@ -6,6 +6,7 @@ const props = defineProps<{
   label: string
   state: CheckState
   detail?: string
+  meta?: string
 }>()
 
 const icon = computed(() => {
@@ -36,9 +37,15 @@ const color = computed(() => {
   return "text-white/40"
 })
 
-const showDetail = computed(
-  () => Boolean(props.detail) && props.state !== "ok" && props.state !== "checking",
-)
+const subline = computed(() => {
+  if (props.detail && props.state !== "ok" && props.state !== "checking") {
+    return { text: props.detail, kind: "detail" as const }
+  }
+  if (props.meta) {
+    return { text: props.meta, kind: "meta" as const }
+  }
+  return null
+})
 </script>
 
 <template>
@@ -47,10 +54,13 @@ const showDetail = computed(
     <div class="flex min-w-0 flex-1 flex-col gap-1">
       <span class="text-sm leading-none text-white/85">{{ label }}</span>
       <span
-        class="block h-4 truncate text-xs leading-none text-white/50 transition-opacity"
-        :class="{ 'opacity-0': !showDetail }"
+        class="block h-4 truncate text-xs leading-none transition-opacity"
+        :class="[
+          subline ? 'opacity-100' : 'opacity-0',
+          subline?.kind === 'detail' ? 'text-white/50' : 'text-white/40',
+        ]"
       >
-        <template v-if="showDetail">{{ detail }}</template>
+        <template v-if="subline">{{ subline.text }}</template>
         <template v-else>·</template>
       </span>
     </div>

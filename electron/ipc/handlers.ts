@@ -7,6 +7,7 @@ import { getGameDir } from "../services/paths"
 import { checkCache, checkGta, checkSamp } from "../services/health"
 import { getGameStatus, launchGame } from "../services/launcher"
 import { cdnGet } from "../services/cdn"
+import { pingServer } from "../services/sampQuery"
 
 export function registerIpcHandlers() {
   ipcMain.handle(IPC.STORE_GET, async (_event, key: keyof LauncherStoreSchema) => {
@@ -38,6 +39,13 @@ export function registerIpcHandlers() {
   ipcMain.handle(IPC.GAME_STATUS_GET, async () => getGameStatus())
 
   ipcMain.handle(IPC.CDN_GET, async (_event, url: string) => cdnGet(url))
+
+  ipcMain.handle(IPC.SERVER_PING, async (_event, payload: { ip: string; port: number }) => {
+    if (typeof payload?.ip !== "string" || typeof payload?.port !== "number") {
+      return { alive: false, ms: null, info: null, error: "invalid args" }
+    }
+    return pingServer(payload.ip, payload.port)
+  })
 
   ipcMain.on(IPC.WINDOW_MINIMIZE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize()

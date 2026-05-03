@@ -1,5 +1,5 @@
-import { computed, ref } from "vue"
-import { fetchGlobalMetrics } from "@/api/public"
+import { computed, ref, watch } from "vue"
+import { useServerPing } from "@/composables/useServerPing"
 
 export type CheckState = "checking" | "ok" | "warning" | "error"
 
@@ -8,6 +8,7 @@ export interface HealthEntry {
   label: string
   state: CheckState
   detail?: string
+  meta?: string
 }
 
 const INITIAL: HealthEntry[] = [
@@ -20,6 +21,7 @@ const INITIAL: HealthEntry[] = [
 export function useHealthCheck() {
   const entries = ref<HealthEntry[]>(INITIAL.map((e) => ({ ...e })))
   const running = ref(false)
+  const serverPing = useServerPing()
 
   const allOk = computed(() =>
     entries.value.filter((e) => e.id !== "server").every((e) => e.state === "ok"),
@@ -34,6 +36,37 @@ export function useHealthCheck() {
   function reset() {
     entries.value = INITIAL.map((e) => ({ ...e }))
   }
+
+  function syncServerEntry() {
+    const result = serverPing.result.value
+    if (!result) {
+      update("server", { state: "checking", detail: undefined, meta: undefined })
+      return
+    }
+    if (!result.alive) {
+      update("server", {
+        state: "error",
+        detail: "El servidor no responde.",
+        meta: undefined,
+      })
+      return
+    }
+    if (!result.info || result.ms === null) {
+      update("server", {
+        state: "error",
+        detail: "Respuesta incompleta del servidor.",
+        meta: undefined,
+      })
+      return
+    }
+    update("server", {
+      state: "ok",
+      detail: undefined,
+      meta: `${result.ms} ms · ${result.info.players}/${result.info.maxPlayers} jugadores`,
+    })
+  }
+
+  watch(() => serverPing.result.value, syncServerEntry, { immediate: true })
 
   async function run() {
     running.value = true
@@ -52,15 +85,8 @@ export function useHealthCheck() {
       detail: local.cache.detail,
     })
 
-    try {
-      await fetchGlobalMetrics()
-      update("server", { state: "ok" })
-    } catch {
-      update("server", {
-        state: "error",
-        detail: "No se pudo obtener información del servidor.",
-      })
-    }
+    await serverPing.ping()
+    syncServerEntry()
 
     running.value = false
   }

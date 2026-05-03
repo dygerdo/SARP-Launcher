@@ -8,6 +8,7 @@ import type {
   HealthCheckPayload,
 } from "./ipc/channels"
 import type { LauncherStoreSchema } from "./services/store"
+import type { PingResult } from "./services/sampQuery"
 
 const launcherApi = {
   getGameDir: (): Promise<string> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
@@ -35,6 +36,9 @@ const launcherApi = {
 
   cdnGet: <T = unknown>(url: string): Promise<CdnResponse<T>> =>
     ipcRenderer.invoke(IPC.CDN_GET, url),
+
+  pingServer: (ip: string, port: number): Promise<PingResult> =>
+    ipcRenderer.invoke(IPC.SERVER_PING, { ip, port }),
 
   minimize: (): void => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
 
