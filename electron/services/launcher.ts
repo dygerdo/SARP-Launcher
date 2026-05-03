@@ -51,7 +51,7 @@ function setActivePid(pid: number | null) {
   broadcastStatus()
 }
 
-async function findGameProcess(): Promise<number | null> {
+export async function findGameProcess(): Promise<number | null> {
   if (process.platform !== "win32") return null
   try {
     const { stdout } = await execAsync(`tasklist /FI "IMAGENAME eq ${TARGET_PROCESS}" /FO CSV /NH`)

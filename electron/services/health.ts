@@ -19,7 +19,7 @@ export function checkGta(): HealthCheckItem {
 export function checkSamp(): HealthCheckItem {
   const exe = join(getGameDir(), "samp.exe")
   if (!existsSync(exe)) {
-    return { ok: false, detail: "Falta samp.exe. Reabrí el launcher para descargarlo." }
+    return { ok: false, detail: "Falta samp.exe. Vuelve a abrir el launcher para descargarlo." }
   }
   return { ok: true }
 }

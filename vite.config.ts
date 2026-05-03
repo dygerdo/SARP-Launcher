@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => {
   if (env.VITE_GAME_CACHE_FOLDER) {
     process.env.VITE_GAME_CACHE_FOLDER = env.VITE_GAME_CACHE_FOLDER
   }
+  if (env.VITE_CDN_URL) {
+    process.env.VITE_CDN_URL = env.VITE_CDN_URL
+  }
 
   return {
     resolve: {

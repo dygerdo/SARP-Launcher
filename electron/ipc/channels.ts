@@ -11,6 +11,11 @@ export const IPC = {
   WINDOW_CLOSE: "window:close",
   SHELL_OPEN_EXTERNAL: "shell:open-external",
   SERVER_PING: "server:ping",
+  MANIFEST_FETCH: "manifest:fetch",
+  SAMP_VERIFY: "samp:verify",
+  SAMP_INSTALL: "samp:install",
+  SAMP_INSTALL_PROGRESS: "samp:install:progress",
+  SAMP_INSTALL_REQUIRES_ELEVATION: "samp:install:requires-elevation",
 } as const
 
 export interface GameStatus {

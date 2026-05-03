@@ -7,13 +7,13 @@ import EventsCarousel from "@/components/home/EventsCarousel.vue"
 import EventModal from "@/components/home/EventModal.vue"
 import LogoMark from "@/components/brand/LogoMark.vue"
 import ServerStatus from "@/components/home/ServerStatus.vue"
-import { useHealthCheck } from "@/composables/useHealthCheck"
+import { useHealthCheckStore } from "@/stores/healthCheck"
 import { useEvents } from "@/composables/useEvents"
 import { useRotatingTagline } from "@/composables/useRotatingTagline"
 import { useGameStatus } from "@/composables/useGameStatus"
 import type { ServerEvent } from "@/api/public"
 
-const { entries, allOk, running, run } = useHealthCheck()
+const health = useHealthCheckStore()
 const { events, loading: eventsLoading, load: loadEvents } = useEvents()
 const { tagline } = useRotatingTagline({ intervalMs: 30000 })
 const { phase, launchMessage, launch } = useGameStatus()
@@ -24,7 +24,6 @@ const host = import.meta.env.VITE_GAME_SERVER_IP
 const port = Number(import.meta.env.VITE_GAME_SERVER_PORT)
 
 onMounted(() => {
-  run()
   loadEvents()
 })
 
@@ -53,7 +52,7 @@ function nextEvent() {
 
 async function play() {
   if (phase.value !== "idle") return
-  if (!allOk.value) {
+  if (!health.allOk) {
     showBlockHint()
     return
   }
@@ -65,10 +64,10 @@ function openSignup() {
 }
 
 function showBlockHint() {
-  const failing = entries.value.find(
+  const failing = health.entries.find(
     (e) => e.id !== "server" && e.state !== "ok" && e.state !== "checking",
   )
-  blockHint.value = failing?.detail ?? "Faltan archivos del juego — verificá tu instalación."
+  blockHint.value = failing?.detail ?? "Faltan archivos del juego — verifica tu instalación."
   setTimeout(() => {
     blockHint.value = null
   }, 3500)
@@ -103,7 +102,7 @@ function showBlockHint() {
         </div>
       </header>
 
-      <HealthCheckList :entries="entries" :rechecking="running" @recheck="run" />
+      <HealthCheckList />
 
       <EventsCarousel :events="events" :loading="eventsLoading" @open="openEvent" />
 
@@ -113,7 +112,7 @@ function showBlockHint() {
         </Transition>
         <PlayButton
           :phase="phase"
-          :disabled="!allOk"
+          :disabled="!health.allOk"
           :launch-message="launchMessage"
           @click="play"
         />
