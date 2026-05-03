@@ -35,6 +35,12 @@ const launcherApi = {
 
   cdnGet: <T = unknown>(url: string): Promise<CdnResponse<T>> =>
     ipcRenderer.invoke(IPC.CDN_GET, url),
+
+  minimize: (): void => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
+
+  close: (): void => ipcRenderer.send(IPC.WINDOW_CLOSE),
+
+  openExternal: (url: string): void => ipcRenderer.send(IPC.SHELL_OPEN_EXTERNAL, url),
 }
 
 export type LauncherApi = typeof launcherApi

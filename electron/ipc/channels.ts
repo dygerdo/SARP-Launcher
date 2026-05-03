@@ -7,6 +7,9 @@ export const IPC = {
   GAME_STATUS_GET: "game:status:get",
   GAME_STATUS_CHANGED: "game:status:changed",
   CDN_GET: "cdn:get",
+  WINDOW_MINIMIZE: "window:minimize",
+  WINDOW_CLOSE: "window:close",
+  SHELL_OPEN_EXTERNAL: "shell:open-external",
 } as const
 
 export interface GameStatus {

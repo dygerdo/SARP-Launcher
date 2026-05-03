@@ -21,8 +21,10 @@ function createWindow() {
     icon: ICON_PATH,
     width: 960,
     height: 860,
-    minWidth: 900,
-    minHeight: 800,
+    frame: false,
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),

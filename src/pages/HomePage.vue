@@ -90,9 +90,12 @@ function showBlockHint() {
             </span>
           </h1>
           <ServerStatus />
-          <div class="relative h-5 w-full overflow-hidden">
+          <div class="relative h-10 w-full overflow-hidden">
             <Transition name="tagline" mode="out-in">
-              <p :key="tagline" class="absolute inset-x-0 truncate text-sm italic text-white/55">
+              <p
+                :key="tagline"
+                class="absolute inset-x-0 line-clamp-2 text-sm italic leading-5 text-white/55"
+              >
                 « {{ tagline }} »
               </p>
             </Transition>

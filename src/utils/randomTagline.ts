@@ -15,7 +15,7 @@ const TAGLINES = [
   "Big Smoke sobrevivió a más balazos que tu chaleco premium.",
   "Tu Faggio pide jubilación.",
   "Tempenny te observa desde la cámara administrativa.",
-  "Perdiste más armas que Ryder neuronas.",
+  "Perdiste más armas que Ryder, neuronas.",
   "La economía del servidor depende de los mecánicos AFK.",
   "Ese choque en Market parecía cinemática de Fast & Furious.",
   "Los Vagos ya están preparando el CK.",

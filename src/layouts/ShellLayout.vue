@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import TitleBar from "@/components/brand/TitleBar.vue"
+import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
+
 const version = "v1.0.0"
 const buildId = "dev"
 const currentYear = new Date().getFullYear()
@@ -7,6 +10,10 @@ defineSlots<{
   default(): unknown
   belowHeader?(): unknown
 }>()
+
+function openSite() {
+  window.launcher.openExternal("https://sarp.es")
+}
 </script>
 
 <template>
@@ -21,27 +28,29 @@ defineSlots<{
       class="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70"
     />
 
-    <header
-      class="relative z-10 flex items-center justify-between px-5 py-3 text-[11px] tracking-widest text-white/50"
-      style="-webkit-app-region: drag"
-    >
-      <span class="font-medium normal-case">{{ version }}</span>
-      <span class="font-medium uppercase">Launcher</span>
-    </header>
+    <TitleBar />
 
     <slot v-if="$slots.belowHeader" name="belowHeader" />
 
-    <main
-      class="relative z-10 flex h-[calc(100%-110px)] flex-col items-center justify-center px-10"
-    >
+    <main class="relative z-10 flex h-[calc(100%-64px)] flex-col items-center justify-center px-10">
       <slot />
     </main>
 
+    <div class="absolute bottom-10 right-5 z-10">
+      <GraffitiSpot />
+    </div>
+
     <footer
-      class="relative z-10 flex items-center justify-between px-5 py-3 text-[10px] uppercase tracking-widest text-white/30"
+      class="absolute inset-x-0 bottom-0 z-10 flex items-center justify-between px-5 py-2 text-[10px] uppercase tracking-widest text-white/30"
     >
-      <span>© 2023 - {{ currentYear }} San Andreas Roleplay</span>
-      <span class="font-mono">build {{ buildId }}</span>
+      <div class="flex items-center gap-3">
+        <span>Copyright © San Andreas Roleplay {{ currentYear }}</span>
+        <span class="text-white/20">·</span>
+        <button type="button" class="transition-colors hover:text-white/60" @click="openSite">
+          sarp.es
+        </button>
+      </div>
+      <span class="font-mono normal-case">{{ version }} ({{ buildId }})</span>
     </footer>
   </div>
 </template>
