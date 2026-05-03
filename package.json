@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "San Andreas Roleplay official launcher",
   "main": "dist-electron/main.js",
-  "type": "module",
   "author": "San Andreas Roleplay",
   "license": "UNLICENSED",
   "private": true,
@@ -17,7 +16,8 @@
     "format": "prettier --write \"src/**/*.{vue,ts,tsx,css,json}\" \"electron/**/*.ts\" \"*.{json,md}\"",
     "format:check": "prettier --check \"src/**/*.{vue,ts,tsx,css,json}\" \"electron/**/*.ts\" \"*.{json,md}\"",
     "typecheck": "vue-tsc --noEmit",
-    "polish": "yarn format && yarn lint && yarn typecheck"
+    "polish": "yarn format && yarn lint && yarn typecheck",
+    "reset": "node scripts/reset.cjs"
   },
   "dependencies": {
     "axios": "^1.7.7",

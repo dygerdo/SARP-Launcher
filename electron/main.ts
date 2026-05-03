@@ -1,6 +1,7 @@
 import { app, BrowserWindow } from "electron"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
+import { registerIpcHandlers } from "./ipc/handlers"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -36,7 +37,10 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  registerIpcHandlers()
+  createWindow()
+})
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit()

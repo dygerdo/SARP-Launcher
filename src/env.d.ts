@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+import type { LauncherApi } from "../electron/preload"
+
 declare module "*.vue" {
   import type { DefineComponent } from "vue"
   const component: DefineComponent<object, object, unknown>
@@ -15,4 +17,10 @@ interface ImportMetaEnv {
 
 interface ImportMeta {
   readonly env: ImportMetaEnv
+}
+
+declare global {
+  interface Window {
+    launcher: LauncherApi
+  }
 }

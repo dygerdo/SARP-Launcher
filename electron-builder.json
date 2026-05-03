@@ -2,7 +2,8 @@
   "appId": "es.sarp.launcher",
   "productName": "San Andreas Roleplay - SA:MP Launcher",
   "directories": {
-    "output": "release/${version}"
+    "output": "release/${version}",
+    "buildResources": "build"
   },
   "files": ["dist", "dist-electron"],
   "extraResources": [
@@ -29,13 +30,15 @@
   "nsis": {
     "oneClick": false,
     "perMachine": false,
-    "allowToChangeInstallationDir": true,
+    "allowToChangeInstallationDirectory": true,
+    "allowElevation": true,
     "deleteAppDataOnUninstall": false,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "SARP SA:MP Launcher",
     "installerIcon": "public/favicon.ico",
     "uninstallerIcon": "public/favicon.ico",
-    "installerHeaderIcon": "public/favicon.ico"
+    "installerHeaderIcon": "public/favicon.ico",
+    "include": "build/installer.nsh"
   }
 }

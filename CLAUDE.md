@@ -4,6 +4,16 @@ Launcher oficial del servidor SAMP de San Andreas Roleplay. App de escritorio Wi
 
 ---
 
+## Documentación
+
+Los planes y diseños detallados viven en [docs/](docs/). Antes de implementar una feature compleja, consultá si hay un doc de referencia en esa carpeta.
+
+- [docs/README.md](docs/README.md) — índice de documentación.
+- [docs/manifest.md](docs/manifest.md) — estructura del CDN + endpoint del manifest.
+- [docs/loading-screen.md](docs/loading-screen.md) — plan del loading screen.
+
+---
+
 ## Skills del proyecto
 
 Este repo incluye una colección de skills locales en [.agents/skills/](.agents/skills/) — guías de referencia (cada una con su propio `SKILL.md`) que Claude **debe consultar al iniciar tareas relacionadas** antes de generar código:
@@ -107,15 +117,21 @@ launcher/
 - **Sin auth**. Solo endpoints públicos de `api.sarp.es`.
 - A futuro: cookie `session` JWT (compartida con el UCP). Cuando se sume, configurar `axios` con `withCredentials: true` y revisar manejo de cookies en Electron.
 
+### Distribución y ubicación del launcher
+
+- **El launcher se instala en la carpeta de GTA San Andreas**, junto a `gta_sa.exe`. El instalador NSIS pide al usuario seleccionar esa carpeta como destino (con guidance clara en la welcome page) y la default a `C:\Program Files (x86)\Rockstar Games\GTA San Andreas`.
+- **No existe onboarding de selección de ruta**. La ubicación de GTA SA es la propia ubicación del launcher: `path.dirname(app.getPath("exe"))` en producción.
+- **En dev** (`yarn dev`), la ruta se simula vía `DEV_GTA_PATH` en `.env`.
+- **Trade-off conocido**: si GTA SA está en `Program Files`, los auto-updates piden UAC (1 click amarillo cada release). Aceptado por simplicidad y porque coincide con el patrón mental de SAMP clásico.
+
 ### Funcionalidades v1
 
-1. **Auto-detectar la instalación de GTA SA** (registro de Windows + rutas comunes + Steam + dialog manual de fallback). Persistir la ruta en `electron-store`.
-2. **Descargar `samp.exe`** desde Bunny CDN → colocarlo en la carpeta de GTA SA detectada.
-3. **Descargar y extraer `cache.zip`** desde Bunny CDN → `Documents\GTA San Andreas User Files\SAMP\cache\`.
-4. **Lanzar el juego** con `child_process.spawn(samp.exe, [IP, PUERTO])`.
-5. **Auto-actualizar el launcher** cuando haya nueva versión publicada.
+1. **Descargar `samp.exe`** desde Bunny CDN → colocarlo junto al launcher (= junto a `gta_sa.exe`).
+2. **Descargar y extraer `cache.zip`** desde Bunny CDN → `Documents\GTA San Andreas User Files\SAMP\cache\`.
+3. **Lanzar el juego** con `child_process.spawn(samp.exe, [IP, PUERTO])`.
+4. **Auto-actualizar el launcher** cuando haya nueva versión publicada.
 
-**Fuera de alcance v1**: auth, edición de `samp.cfg`, perfil del usuario, news feed, chat, Socket.IO.
+**Fuera de alcance v1**: auth, edición de `samp.cfg`, perfil del usuario, news feed, chat, Socket.IO, onboarding (no hace falta — el instalador ya hace ese rol).
 
 ### CDN y assets
 
@@ -241,7 +257,7 @@ Si `polish` falla, **el cambio no está terminado**. Hay que arreglar lo que rep
 | `LoadingPage.vue`    | `InitialLoadingScreenWithProgress.vue`                    |
 | `ProgressBar.vue`    | `LinearProgressBarWithGlow.vue`                           |
 | `LogoMark.vue`       | `AnimatedLogoWithShimmerEffect.vue`                       |
-| `gtaDetector.ts`     | `findGTASanAndreasInstallationPath.ts`                    |
+| `paths.ts`           | `gameInstallationPathHelpers.ts`                          |
 | `downloader.ts`      | `assetDownloaderWithProgressTracking.ts`                  |
 | `formatBytes(n)`     | `convertNumberOfBytesToHumanReadableString(n)`            |
 | `getUser(id)`        | `retrieveUserFromDatabaseById(id)`                        |
