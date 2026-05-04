@@ -28,7 +28,7 @@ const INITIAL: HealthEntry[] = [
   { id: "gta", label: "GTA: San Andreas", state: "checking" },
   { id: "samp", label: "SA:MP", state: "checking" },
   { id: "cache", label: "Caché de modelos", state: "checking" },
-  { id: "server", label: "Conexión con el servidor", state: "checking" },
+  { id: "server", label: "Ping con el servidor", state: "checking" },
 ]
 
 function describeSamp(result: SampVerificationResult): string | undefined {
@@ -154,10 +154,15 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
       })
       return
     }
+    // Format: "Miami · 42 ms · 18/200 jugadores". Location is baked at
+    // build time from VITE_GAME_SERVER_LOCATION — the server doesn't move
+    // often enough to warrant geo lookups at runtime.
+    const location = import.meta.env.VITE_GAME_SERVER_LOCATION ?? ""
+    const stats = `${result.ms} ms · ${result.info.players}/${result.info.maxPlayers} jugadores`
     update("server", {
       state: "ok",
       detail: undefined,
-      meta: `${result.ms} ms · ${result.info.players}/${result.info.maxPlayers} jugadores`,
+      meta: location ? `${location} · ${stats}` : stats,
     })
   }
 

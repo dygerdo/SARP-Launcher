@@ -13,6 +13,7 @@ interface ImportMetaEnv {
   readonly VITE_CDN_URL: string
   readonly VITE_GAME_SERVER_IP: string
   readonly VITE_GAME_SERVER_PORT: string
+  readonly VITE_GAME_SERVER_LOCATION?: string
 }
 
 interface ImportMeta {

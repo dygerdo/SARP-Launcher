@@ -60,16 +60,37 @@ const TAGLINES = [
   "Sweet lleva 20 años esperando que CJ deje el PK.",
   "Sttam es el único que puede usar un tanque sin ser reportado.",
   "Pigeon es más friki que Zero, y eso es decir mucho.",
+  "Tiburcio Tenedor es el único crack que puede conducir una Monster.",
 ] as const
 
+// Bag shuffle: we hand out every tagline once before any repeats. This is
+// closer to "really random" than picking uniformly each time, which would
+// happily show the same line three times in a row.
 let bag: string[] = []
 let lastSeen: string | null = null
 
+/**
+ * Fisher-Yates in-place shuffle. Produces a uniform permutation —
+ * `arr.sort(() => Math.random() - 0.5)` does NOT (V8 in particular biases
+ * heavily toward the original order for small arrays).
+ */
+function shuffle<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
 export function randomTagline(): string {
   if (bag.length === 0) {
-    bag = [...TAGLINES].sort(() => Math.random() - 0.5)
-    if (bag[0] === lastSeen && bag.length > 1) {
-      ;[bag[0], bag[1]] = [bag[1], bag[0]]
+    bag = shuffle([...TAGLINES])
+    // Avoid the immediate-repeat case where the new bag's last element
+    // (the next pop) equals what we just showed at the end of the prior
+    // bag — swap it with the second-to-last so the user never sees the
+    // same line twice in a row across bag boundaries.
+    if (bag[bag.length - 1] === lastSeen && bag.length > 1) {
+      ;[bag[bag.length - 1], bag[bag.length - 2]] = [bag[bag.length - 2], bag[bag.length - 1]]
     }
   }
   const tag = bag.pop()!

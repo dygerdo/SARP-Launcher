@@ -5,19 +5,17 @@ interface Options {
   intervalMs?: number
 }
 
+const DEFAULT_INTERVAL_MS = 60_000
+
 export function useRotatingTagline(options: Options = {}) {
-  const { intervalMs = 8000 } = options
+  const { intervalMs = DEFAULT_INTERVAL_MS } = options
   const tagline = ref(randomTagline())
   let timer: ReturnType<typeof setInterval> | null = null
 
+  // The bag in randomTagline already guarantees we won't see the same
+  // line twice in a row, so a single call per tick is enough.
   function rotate() {
-    let next = randomTagline()
-    let attempts = 0
-    while (next === tagline.value && attempts < 5) {
-      next = randomTagline()
-      attempts += 1
-    }
-    tagline.value = next
+    tagline.value = randomTagline()
   }
 
   onMounted(() => {

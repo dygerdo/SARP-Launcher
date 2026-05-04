@@ -98,11 +98,11 @@ const actionProgressFillClass = computed(() =>
       <i v-else class="pi text-base leading-none" :class="[icon, color]" />
     </span>
     <div class="flex min-w-0 flex-1 flex-col gap-1">
-      <span class="truncate text-sm leading-none text-white/85">{{ label }}</span>
+      <span class="truncate text-sm leading-tight text-white/85">{{ label }}</span>
       <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
         <span
           v-if="subline"
-          class="block w-full break-words py-px text-xs leading-tight"
+          class="block w-full break-words text-xs leading-snug"
           :class="subline.kind === 'detail' ? 'text-white/50' : 'text-white/40'"
         >
           {{ subline.text }}

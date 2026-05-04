@@ -15,7 +15,7 @@ import type { ServerEvent } from "@/api/public"
 
 const health = useHealthCheckStore()
 const { events, loading: eventsLoading, load: loadEvents } = useEvents()
-const { tagline } = useRotatingTagline({ intervalMs: 30000 })
+const { tagline } = useRotatingTagline()
 const { phase, launchMessage, launch } = useGameStatus()
 const blockHint = ref<string | null>(null)
 const selectedIndex = ref<number | null>(null)
