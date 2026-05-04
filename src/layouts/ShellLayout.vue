@@ -2,6 +2,15 @@
 import TitleBar from "@/components/brand/TitleBar.vue"
 import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
 
+withDefaults(
+  defineProps<{
+    loading?: boolean
+  }>(),
+  {
+    loading: false,
+  },
+)
+
 const version = "v1.0.0"
 const buildId = "dev"
 const currentYear = new Date().getFullYear()
@@ -9,6 +18,7 @@ const currentYear = new Date().getFullYear()
 defineSlots<{
   default(): unknown
   belowHeader?(): unknown
+  skeleton?(): unknown
 }>()
 
 function openSite() {
@@ -33,7 +43,18 @@ function openSite() {
     <slot v-if="$slots.belowHeader" name="belowHeader" />
 
     <main class="relative z-10 flex h-[calc(100%-64px)] flex-col items-center justify-center px-10">
-      <slot />
+      <Transition name="shell-fade" mode="out-in">
+        <div
+          v-if="loading && $slots.skeleton"
+          key="skeleton"
+          class="flex w-full flex-col items-center justify-center"
+        >
+          <slot name="skeleton" />
+        </div>
+        <div v-else key="content" class="flex w-full flex-col items-center justify-center">
+          <slot />
+        </div>
+      </Transition>
     </main>
 
     <div class="absolute bottom-10 right-5 z-10">
@@ -54,3 +75,20 @@ function openSite() {
     </footer>
   </div>
 </template>
+
+<style scoped>
+.shell-fade-enter-active,
+.shell-fade-leave-active {
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease;
+}
+.shell-fade-enter-from {
+  opacity: 0;
+  filter: blur(4px);
+}
+.shell-fade-leave-to {
+  opacity: 0;
+  filter: blur(2px);
+}
+</style>

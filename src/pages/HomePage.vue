@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue"
+import { computed, nextTick, onMounted, ref, watch } from "vue"
 import ShellLayout from "@/layouts/ShellLayout.vue"
 import HealthCheckList from "@/components/home/HealthCheckList.vue"
 import PlayButton from "@/components/home/PlayButton.vue"
@@ -23,8 +23,38 @@ const selectedIndex = ref<number | null>(null)
 const host = import.meta.env.VITE_GAME_SERVER_IP
 const port = Number(import.meta.env.VITE_GAME_SERVER_PORT)
 
+// "ready" gates the swap from skeleton to real content. We need:
+//   1) Vue has actually painted at least one frame (post-mount + nextTick).
+//   2) The first health-check pass has finished — that's when the most
+//      visible chunk of the page (the install/server status list) settles.
+// We also fall back to a hard 2.5 s timeout: if the network is slow or
+// healthCheck is stuck, we'd rather show the real UI in its loading state
+// than a permanent skeleton.
+const ready = ref(false)
+const READY_TIMEOUT_MS = 2500
+let firstHealthRunSeen = false
+
 onMounted(() => {
   loadEvents()
+
+  const timeout = window.setTimeout(() => {
+    ready.value = true
+  }, READY_TIMEOUT_MS)
+
+  const stop = watch(
+    () => health.running,
+    async (isRunning, wasRunning) => {
+      // Track the running -> idle edge of the very first run.
+      if (wasRunning && !isRunning && !firstHealthRunSeen) {
+        firstHealthRunSeen = true
+        await nextTick()
+        ready.value = true
+        window.clearTimeout(timeout)
+        stop()
+      }
+    },
+    { immediate: true },
+  )
 })
 
 const eventsList = computed(() => events.value)
@@ -75,7 +105,57 @@ function showBlockHint() {
 </script>
 
 <template>
-  <ShellLayout>
+  <ShellLayout :loading="!ready">
+    <template #skeleton>
+      <div class="flex w-full max-w-xl flex-col items-center gap-6">
+        <header class="flex w-full items-center gap-5">
+          <LogoMark size="md" />
+          <!-- Heights mirror the real header (h1 ~32 px, ServerStatus ~16 px,
+               tagline slot 40 px) so the swap from skeleton to content is
+               CLS-free. -->
+          <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <div class="skeleton-block h-7 w-4/5" />
+            <div class="skeleton-block h-4 w-3/5" />
+            <div class="skeleton-block h-10 w-11/12" />
+          </div>
+        </header>
+
+        <section
+          class="relative w-full overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] px-5 py-4 backdrop-blur-sm"
+        >
+          <div class="mb-3 flex items-center justify-between">
+            <div class="skeleton-block h-3 w-40" />
+            <div class="skeleton-block h-5 w-5 rounded-md" />
+          </div>
+          <div class="divide-y divide-white/5">
+            <div
+              v-for="i in 4"
+              :key="i"
+              class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0"
+            >
+              <div class="flex flex-1 items-center gap-3">
+                <div class="skeleton-block h-4 w-4 rounded-full" />
+                <div class="flex flex-1 flex-col gap-1.5">
+                  <div class="skeleton-block h-3.5 w-1/2" />
+                  <div class="skeleton-block h-2.5 w-3/4" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- No event placeholders here on purpose: events are dynamic and may
+             legitimately be empty. EventsCarousel itself renders nothing when
+             there are no events, so faking 5 cards would lie to the user. The
+             real carousel handles its own loading state once `ready` flips. -->
+
+        <div class="flex w-full flex-col items-center gap-3 pt-2">
+          <div class="skeleton-block h-14 w-full max-w-xs rounded-2xl" />
+          <div class="skeleton-block h-3 w-48" />
+        </div>
+      </div>
+    </template>
+
     <div class="flex w-full max-w-xl flex-col items-center gap-6">
       <header class="flex items-center gap-5">
         <LogoMark size="md" />
