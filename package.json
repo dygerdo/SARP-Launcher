@@ -29,12 +29,14 @@
     "primeicons": "^7.0.0",
     "primevue": "^4.2.1",
     "vue": "^3.5.12",
-    "vue-router": "^4.4.5"
+    "vue-router": "^4.4.5",
+    "yauzl": "^3.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@primevue/themes": "^4.2.1",
     "@types/node": "^22.7.5",
+    "@types/yauzl": "^2.10.3",
     "@typescript-eslint/eslint-plugin": "^8.8.1",
     "@typescript-eslint/parser": "^8.8.1",
     "@vitejs/plugin-vue": "^5.1.4",

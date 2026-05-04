@@ -3,8 +3,11 @@ import { spawn } from "node:child_process"
 import { createHash, randomBytes } from "node:crypto"
 import { createReadStream, createWriteStream, existsSync, statSync } from "node:fs"
 import { promises as fsp } from "node:fs"
-import { join } from "node:path"
-import extract from "extract-zip"
+import { dirname, join, normalize, sep } from "node:path"
+import type { Readable } from "node:stream"
+import { pipeline } from "node:stream/promises"
+import yauzl from "yauzl"
+import type { Entry, ZipFile } from "yauzl"
 import { fetchManifest, getCachedManifest } from "./manifest"
 import type { LauncherManifest } from "./manifest"
 import store from "./store"
@@ -254,8 +257,192 @@ async function removeZoneIdentifier(filePath: string): Promise<void> {
   }
 }
 
-async function extractDirect(zipPath: string, targetDir: string): Promise<void> {
-  await extract(zipPath, { dir: targetDir })
+// Larger write buffer than Node's default (16 KB). Cuts the number of write
+// syscalls per file by ~16x, which matters more on slow HDDs where each seek
+// is expensive than on fast SSDs.
+const EXTRACT_HIGH_WATER_MARK = 256 * 1024
+
+// Throttle progress events. Emitting per-chunk would flood the IPC channel
+// (hundreds of events per second on big files) and stall the renderer.
+const PROGRESS_THROTTLE_MS = 100
+
+function openZipReadable(zipPath: string): Promise<ZipFile> {
+  return new Promise((resolve, reject) => {
+    yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
+      if (err || !zipfile) {
+        reject(err ?? new Error("No se pudo abrir el zip."))
+        return
+      }
+      resolve(zipfile)
+    })
+  })
+}
+
+function openEntryStream(zipfile: ZipFile, entry: Entry): Promise<Readable> {
+  return new Promise((resolve, reject) => {
+    zipfile.openReadStream(entry, (err, stream) => {
+      if (err || !stream) {
+        reject(err ?? new Error(`No se pudo abrir ${entry.fileName}`))
+        return
+      }
+      resolve(stream)
+    })
+  })
+}
+
+function isUnsafeEntryPath(rel: string): boolean {
+  const normalized = normalize(rel)
+  // Reject absolute paths and any segment that escapes the target.
+  if (normalized.startsWith(sep) || /^[a-zA-Z]:/.test(normalized)) return true
+  return normalized.split(sep).includes("..")
+}
+
+/**
+ * Extracts a zip entry-by-entry in series, optimised for slow drives:
+ *
+ * - Single-threaded loop: parallel writes thrash HDD heads with seeks. Serial
+ *   keeps the disk doing one sequential write at a time.
+ * - Pre-creates every directory once at the top, so the per-entry hot path
+ *   skips the recursive `mkdir`.
+ * - Larger write buffer (256 KB) than Node's default to amortise syscalls.
+ * - Skips `realpath` per entry; we validate the relative path syntactically
+ *   instead, which is enough to block traversal without an extra stat.
+ * - Progress in real (uncompressed) bytes, not entry count, so the bar moves
+ *   proportionally to time when entries vary in size.
+ */
+async function extractDirect(
+  zipPath: string,
+  targetDir: string,
+  onProgress: GtaInstallProgressCallback,
+): Promise<void> {
+  // First pass: collect entries and totals. yauzl can't rewind, so we open
+  // the zip twice — once to plan, once to extract. Both passes are cheap
+  // because we never read the file bodies in pass one.
+  const planning = await openZipReadable(zipPath)
+  const entries: Entry[] = []
+  const directories = new Set<string>()
+  let totalBytes = 0
+
+  await new Promise<void>((resolve, reject) => {
+    planning.on("error", reject)
+    planning.on("end", resolve)
+    planning.on("entry", (entry: Entry) => {
+      const isDir = entry.fileName.endsWith("/")
+      if (isUnsafeEntryPath(entry.fileName)) {
+        reject(new Error(`Ruta no permitida en el zip: ${entry.fileName}`))
+        planning.close()
+        return
+      }
+      if (isDir) {
+        directories.add(entry.fileName)
+      } else {
+        entries.push(entry)
+        totalBytes += entry.uncompressedSize
+        // The directory containing this file must also exist.
+        const parent = dirname(entry.fileName)
+        if (parent && parent !== ".") directories.add(parent + "/")
+      }
+      planning.readEntry()
+    })
+    planning.readEntry()
+  })
+
+  // Pre-create every directory once. Sorted by depth so parents come first
+  // and `recursive: true` short-circuits on the deeper calls.
+  const sortedDirs = [...directories].sort((a, b) => a.length - b.length)
+  for (const dir of sortedDirs) {
+    await fsp.mkdir(join(targetDir, dir), { recursive: true })
+  }
+
+  // Pass two: extract each file in series, streaming inflate → write.
+  const zipfile = await openZipReadable(zipPath)
+  const totalEntries = entries.length
+  let processedBytes = 0
+  let processedEntries = 0
+  let lastEmittedAt = 0
+
+  const emit = (force = false) => {
+    const now = Date.now()
+    if (!force && now - lastEmittedAt < PROGRESS_THROTTLE_MS) return
+    lastEmittedAt = now
+    const percent = totalBytes > 0 ? Math.min(100, (processedBytes / totalBytes) * 100) : 0
+    onProgress({
+      phase: "extract",
+      percent,
+      bytesDone: processedBytes,
+      bytesTotal: totalBytes,
+      message: `Extrayendo ${processedEntries} de ${totalEntries} archivos...`,
+    })
+  }
+
+  emit(true)
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      let pending = entries.length
+      if (pending === 0) {
+        zipfile.close()
+        resolve()
+        return
+      }
+
+      zipfile.on("error", reject)
+      zipfile.on("close", () => {
+        if (processedEntries === totalEntries) resolve()
+      })
+
+      const next = (): void => {
+        zipfile.readEntry()
+      }
+
+      zipfile.on("entry", (entry: Entry) => {
+        // Directories were already created in pass one; skip them.
+        if (entry.fileName.endsWith("/")) {
+          next()
+          return
+        }
+        ;(async () => {
+          try {
+            const dest = join(targetDir, entry.fileName)
+            const readStream = await openEntryStream(zipfile, entry)
+            const writeStream = createWriteStream(dest, {
+              highWaterMark: EXTRACT_HIGH_WATER_MARK,
+            })
+            // Stream chunks of the *uncompressed* output as they arrive so
+            // the progress bar moves continuously even while a single huge
+            // file (gta3.img can be 200+ MB) is being inflated. Without
+            // this, the bar would freeze for the duration of each big file.
+            let entryBytesReported = 0
+            readStream.on("data", (chunk: Buffer) => {
+              entryBytesReported += chunk.length
+              processedBytes += chunk.length
+              emit()
+            })
+            await pipeline(readStream, writeStream)
+            // Reconcile in case uncompressedSize > bytes we observed (rare:
+            // some encoders pad). Never let processedBytes drift behind
+            // what the planning pass said this entry should contribute.
+            const drift = entry.uncompressedSize - entryBytesReported
+            if (drift > 0) processedBytes += drift
+            processedEntries += 1
+            emit()
+            pending -= 1
+            if (pending === 0) {
+              zipfile.close()
+            } else {
+              next()
+            }
+          } catch (err) {
+            reject(err instanceof Error ? err : new Error(String(err)))
+          }
+        })()
+      })
+
+      zipfile.readEntry()
+    })
+  } finally {
+    emit(true)
+  }
 }
 
 async function extractElevated(zipPath: string, targetDir: string): Promise<void> {
@@ -391,10 +578,10 @@ export async function installGta(
 
     await removeZoneIdentifier(zipPath)
 
-    onProgress({ phase: "extract", percent: 0, message: "Extrayendo archivos..." })
     const writable = await canWriteToDir(targetDir)
     if (writable) {
-      await extractDirect(zipPath, targetDir)
+      onProgress({ phase: "extract", percent: 0, message: "Extrayendo archivos..." })
+      await extractDirect(zipPath, targetDir, onProgress)
     } else {
       onProgress({
         phase: "extract",
