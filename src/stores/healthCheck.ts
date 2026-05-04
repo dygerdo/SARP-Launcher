@@ -3,6 +3,11 @@ import { computed, ref, watch } from "vue"
 import { useServerPing } from "@/composables/useServerPing"
 import type { SampVerificationResult } from "../../electron/services/sampVerify"
 import type { InstallProgress } from "../../electron/services/sampInstall"
+import type { DetectedMod } from "../../electron/services/gtaMods"
+import type { GtaInstallProgress } from "../../electron/services/gtaInstall"
+import { useDialogStore } from "@/stores/dialog"
+
+export type GtaActionType = "install" | null
 
 export type SampActionType = "install" | "repair" | null
 
@@ -37,7 +42,7 @@ function describeSamp(result: SampVerificationResult): string | undefined {
 
   if (missing.length > 0 && corrupted.length === 0) {
     return missing.length === failed.length && failed.length === result.files.length
-      ? "No está instalado."
+      ? "No está instalado en esta carpeta."
       : `Falta ${joinFileList(missing.map((f) => f.path))}.`
   }
 
@@ -74,7 +79,12 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
   const installProgress = ref<InstallProgress | null>(null)
   const lastSampVerification = ref<SampVerificationResult | null>(null)
   const requiresElevation = ref<boolean>(false)
+  const gtaMods = ref<DetectedMod[]>([])
+  const gtaMissingAll = ref<boolean>(false)
+  const gtaInstalling = ref<boolean>(false)
+  const gtaInstallProgress = ref<GtaInstallProgress | null>(null)
   const serverPing = useServerPing()
+  const dialog = useDialogStore()
 
   const allOk = computed(() =>
     entries.value.filter((e) => e.id !== "server").every((e) => e.state === "ok"),
@@ -90,8 +100,12 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     Object.assign(target, patch)
   }
 
+  const gtaActionType = computed<GtaActionType>(() => (gtaMissingAll.value ? "install" : null))
+
   function reset() {
     entries.value = INITIAL.map((e) => ({ ...e }))
+    gtaMods.value = []
+    gtaMissingAll.value = false
   }
 
   function syncServerEntry() {
@@ -131,6 +145,16 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
       state: health.gta.ok ? "ok" : "error",
       detail: health.gta.detail,
     })
+    gtaMissingAll.value = health.gta.missingAll
+    if (health.gta.ok) {
+      try {
+        gtaMods.value = await window.launcher.detectGtaMods()
+      } catch {
+        gtaMods.value = []
+      }
+    } else {
+      gtaMods.value = []
+    }
   }
 
   async function checkSamp(): Promise<void> {
@@ -228,6 +252,54 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     }
   }
 
+  async function pickGameDir(): Promise<{ ok: boolean; cancelled?: boolean; error?: string }> {
+    const result = await window.launcher.pickGameDir()
+    if (result.ok) {
+      await run()
+      return { ok: true }
+    }
+    if (result.cancelled) return { ok: false, cancelled: true }
+    if (result.error) {
+      void dialog.error("Carpeta inválida", result.error)
+    }
+    return { ok: false, error: result.error }
+  }
+
+  async function installGta(): Promise<{ ok: boolean; cancelled?: boolean; error?: string }> {
+    if (gtaInstalling.value) return { ok: false, error: "Ya hay una instalación en curso." }
+
+    const pick = await window.launcher.pickEmptyInstallDir()
+    if (!pick.ok || !pick.path) {
+      if (pick.cancelled) return { ok: false, cancelled: true }
+      const error = pick.error ?? "No se pudo seleccionar la carpeta."
+      void dialog.error("Carpeta no válida", error)
+      return { ok: false, error }
+    }
+
+    gtaInstalling.value = true
+    gtaInstallProgress.value = { phase: "preflight", percent: 0 }
+
+    const detach = window.launcher.onGtaInstallProgress((progress) => {
+      gtaInstallProgress.value = progress
+    })
+
+    try {
+      const result = await window.launcher.installGta(pick.path)
+      if (!result.ok) {
+        const error = result.error ?? "La instalación falló."
+        void dialog.error("Error al instalar", error)
+        return { ok: false, error }
+      }
+      await run()
+      void dialog.success("Listo", "GTA: San Andreas se instaló correctamente.")
+      return { ok: true }
+    } finally {
+      detach()
+      gtaInstalling.value = false
+      gtaInstallProgress.value = null
+    }
+  }
+
   return {
     entries,
     allOk,
@@ -236,7 +308,13 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     installProgress,
     sampActionType,
     requiresElevation,
+    gtaMods,
+    gtaActionType,
+    gtaInstalling,
+    gtaInstallProgress,
     run,
     installSamp,
+    pickGameDir,
+    installGta,
   }
 })

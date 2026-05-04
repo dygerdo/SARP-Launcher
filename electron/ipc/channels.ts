@@ -16,6 +16,11 @@ export const IPC = {
   SAMP_INSTALL: "samp:install",
   SAMP_INSTALL_PROGRESS: "samp:install:progress",
   SAMP_INSTALL_REQUIRES_ELEVATION: "samp:install:requires-elevation",
+  GAME_DIR_PICK: "game-dir:pick",
+  GAME_DIR_PICK_EMPTY: "game-dir:pick-empty",
+  GTA_MODS_DETECT: "gta:mods:detect",
+  GTA_INSTALL: "gta:install",
+  GTA_INSTALL_PROGRESS: "gta:install:progress",
 } as const
 
 export interface GameStatus {
@@ -31,7 +36,7 @@ export interface CdnResponse<T = unknown> {
 }
 
 export interface HealthCheckPayload {
-  gta: { ok: boolean; detail?: string }
+  gta: { ok: boolean; detail?: string; missingAll: boolean }
   samp: { ok: boolean; detail?: string }
   cache: { ok: boolean; detail?: string }
 }

@@ -15,12 +15,22 @@ export interface ManifestInstallerEntry {
   silentArgs: string[]
 }
 
+export interface ManifestGtaRipEntry {
+  filename: string
+  url: string
+  sha256: string
+  size: number
+}
+
 export interface LauncherManifest {
   schemaVersion: number
   generatedAt: string
   samp: {
     files: ManifestFileEntry[]
     installer: ManifestInstallerEntry
+  }
+  gta: {
+    rip: ManifestGtaRipEntry
   }
 }
 
@@ -44,6 +54,8 @@ function isValidManifest(value: unknown): value is LauncherManifest {
   if (!m.samp || typeof m.samp !== "object") return false
   if (!Array.isArray(m.samp.files)) return false
   if (!m.samp.installer || typeof m.samp.installer !== "object") return false
+  if (!m.gta || typeof m.gta !== "object") return false
+  if (!m.gta.rip || typeof m.gta.rip !== "object") return false
   return true
 }
 

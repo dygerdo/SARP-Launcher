@@ -12,6 +12,9 @@ import type { PingResult } from "./services/sampQuery"
 import type { LauncherManifest } from "./services/manifest"
 import type { SampVerificationResult } from "./services/sampVerify"
 import type { InstallProgress, InstallResult } from "./services/sampInstall"
+import type { PickGameDirResult } from "./services/paths"
+import type { DetectedMod } from "./services/gtaMods"
+import type { GtaInstallProgress, GtaInstallResult } from "./services/gtaInstall"
 
 const launcherApi = {
   getGameDir: (): Promise<string> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
@@ -52,6 +55,22 @@ const launcherApi = {
 
   sampInstallRequiresElevation: (): Promise<boolean> =>
     ipcRenderer.invoke(IPC.SAMP_INSTALL_REQUIRES_ELEVATION),
+
+  pickGameDir: (): Promise<PickGameDirResult> => ipcRenderer.invoke(IPC.GAME_DIR_PICK),
+
+  pickEmptyInstallDir: (): Promise<PickGameDirResult> =>
+    ipcRenderer.invoke(IPC.GAME_DIR_PICK_EMPTY),
+
+  detectGtaMods: (): Promise<DetectedMod[]> => ipcRenderer.invoke(IPC.GTA_MODS_DETECT),
+
+  installGta: (targetDir: string): Promise<GtaInstallResult> =>
+    ipcRenderer.invoke(IPC.GTA_INSTALL, { targetDir }),
+
+  onGtaInstallProgress: (callback: (progress: GtaInstallProgress) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, progress: GtaInstallProgress) => callback(progress)
+    ipcRenderer.on(IPC.GTA_INSTALL_PROGRESS, listener)
+    return () => ipcRenderer.off(IPC.GTA_INSTALL_PROGRESS, listener)
+  },
 
   onSampInstallProgress: (callback: (progress: InstallProgress) => void): (() => void) => {
     const listener = (_event: IpcRendererEvent, progress: InstallProgress) => callback(progress)

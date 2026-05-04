@@ -3,7 +3,12 @@ import { IPC } from "./channels"
 import type { GameLaunchPayload, HealthCheckPayload } from "./channels"
 import store from "../services/store"
 import type { LauncherStoreSchema } from "../services/store"
-import { getGameDir } from "../services/paths"
+import { getGameDir, pickGameDir, pickEmptyInstallDir } from "../services/paths"
+import type { PickGameDirResult } from "../services/paths"
+import { detectGtaMods } from "../services/gtaMods"
+import type { DetectedMod } from "../services/gtaMods"
+import { installGta } from "../services/gtaInstall"
+import type { GtaInstallProgress, GtaInstallResult } from "../services/gtaInstall"
 import { checkCache, checkGta, checkSamp } from "../services/health"
 import { getGameStatus, launchGame } from "../services/launcher"
 import { cdnGet } from "../services/cdn"
@@ -91,6 +96,35 @@ export function registerIpcHandlers() {
     const writable = await canWriteToGameDir(getGameDir())
     return !writable
   })
+
+  ipcMain.handle(IPC.GAME_DIR_PICK, async (): Promise<PickGameDirResult> => pickGameDir())
+
+  ipcMain.handle(
+    IPC.GAME_DIR_PICK_EMPTY,
+    async (): Promise<PickGameDirResult> => pickEmptyInstallDir(),
+  )
+
+  ipcMain.handle(IPC.GTA_MODS_DETECT, async (): Promise<DetectedMod[]> => detectGtaMods())
+
+  ipcMain.handle(
+    IPC.GTA_INSTALL,
+    async (event, payload: { targetDir: string }): Promise<GtaInstallResult> => {
+      if (typeof payload?.targetDir !== "string") {
+        return { ok: false, error: "Falta la carpeta destino." }
+      }
+      const send = (progress: GtaInstallProgress) => {
+        if (event.sender.isDestroyed()) return
+        event.sender.send(IPC.GTA_INSTALL_PROGRESS, progress)
+      }
+      const result = await installGta(payload.targetDir, send)
+      if (result.ok) {
+        // Promote the chosen folder to the canonical gtaPath so subsequent
+        // health checks read the install we just created.
+        store.set("gtaPath", payload.targetDir)
+      }
+      return result
+    },
+  )
 
   ipcMain.on(IPC.WINDOW_MINIMIZE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize()

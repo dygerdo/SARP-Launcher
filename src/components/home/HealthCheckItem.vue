@@ -17,12 +17,24 @@ export interface ItemAction {
   onClick: () => void
 }
 
+/** Lightweight inline link rendered next to the item's title. Use it for
+ *  affordances that don't deserve the heavy primary/secondary button slot,
+ *  such as "Change folder" on the GTA row. */
+export interface InlineAction {
+  label: string
+  /** PrimeIcons class, e.g. "pi-folder-open". */
+  icon?: string
+  title?: string
+  onClick: () => void
+}
+
 const props = defineProps<{
   label: string
   state: CheckState
   detail?: string
   meta?: string
   action?: ItemAction
+  inlineAction?: InlineAction
 }>()
 
 const icon = computed(() => {
@@ -80,28 +92,38 @@ const actionProgressFillClass = computed(() =>
 </script>
 
 <template>
-  <div class="flex h-14 items-start gap-3 py-2.5">
-    <span class="mt-0.5 inline-flex h-4 w-4 items-center justify-center leading-none">
+  <div class="flex min-h-14 items-start gap-3 overflow-hidden py-2.5">
+    <span class="mt-0.5 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center leading-none">
       <span v-if="state === 'checking'" class="state-spinner" aria-label="Verificando" />
       <i v-else class="pi text-base leading-none" :class="[icon, color]" />
     </span>
     <div class="flex min-w-0 flex-1 flex-col gap-1">
-      <span class="text-sm leading-none text-white/85">{{ label }}</span>
-      <span
-        class="block h-4 truncate text-xs leading-none transition-opacity"
-        :class="[
-          subline ? 'opacity-100' : 'opacity-0',
-          subline?.kind === 'detail' ? 'text-white/50' : 'text-white/40',
-        ]"
-      >
-        <template v-if="subline">{{ subline.text }}</template>
-        <template v-else>·</template>
-      </span>
+      <span class="truncate text-sm leading-none text-white/85">{{ label }}</span>
+      <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+        <span
+          v-if="subline"
+          class="block w-full break-words py-px text-xs leading-tight"
+          :class="subline.kind === 'detail' ? 'text-white/50' : 'text-white/40'"
+        >
+          {{ subline.text }}
+        </span>
+        <slot name="extras" />
+      </div>
     </div>
+    <button
+      v-if="inlineAction && !action"
+      type="button"
+      class="mt-0.5 inline-flex h-7 flex-shrink-0 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-xs font-medium text-white/70 transition-colors duration-150 hover:border-white/30 hover:bg-white/[0.04] hover:text-white/95"
+      :title="inlineAction.title ?? inlineAction.label"
+      @click="inlineAction.onClick"
+    >
+      <i v-if="inlineAction.icon" class="pi text-[11px]" :class="inlineAction.icon" />
+      <span class="leading-none">{{ inlineAction.label }}</span>
+    </button>
     <button
       v-if="action"
       type="button"
-      class="relative mt-0.5 inline-flex h-7 min-w-[88px] items-center justify-center overflow-hidden rounded-md px-2.5 text-xs font-bold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60"
+      class="relative mt-0.5 inline-flex h-7 min-w-[88px] flex-shrink-0 items-center justify-center overflow-hidden rounded-md px-2.5 text-xs font-bold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60"
       :class="actionButtonClass"
       :disabled="action.disabled || action.busy"
       @click="action.onClick"

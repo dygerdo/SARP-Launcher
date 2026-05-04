@@ -79,6 +79,7 @@ async function downloadInstaller(
     },
   })
 
+  await removeZoneIdentifier(filePath)
   return { filePath, dirPath }
 }
 
@@ -105,35 +106,6 @@ function buildInstallerArgs(silentArgs: readonly string[], gameDir: string): str
   return silentArgs.includes("/D=") ? [...silentArgs] : [...silentArgs, `/D=${gameDir}`]
 }
 
-async function runSilentInstallDirect(
-  installerPath: string,
-  args: string[],
-  gameDir: string,
-): Promise<void> {
-  await new Promise<void>((resolve, reject) => {
-    const child = spawn(installerPath, args, {
-      cwd: gameDir,
-      windowsVerbatimArguments: true,
-    })
-
-    const timeout = setTimeout(() => {
-      child.kill()
-      reject(new Error("El instalador no respondió a tiempo."))
-    }, INSTALL_TIMEOUT_MS)
-
-    child.on("error", (err) => {
-      clearTimeout(timeout)
-      reject(err)
-    })
-
-    child.on("close", (code) => {
-      clearTimeout(timeout)
-      if (code === 0) resolve()
-      else reject(new Error(`El instalador terminó con código ${code}.`))
-    })
-  })
-}
-
 function escapePowerShellSingleQuoted(value: string): string {
   return value.replace(/'/g, "''")
 }
@@ -144,21 +116,28 @@ const ELEVATED_EXIT_UAC_CANCELLED = 1223 // matches Win32 ERROR_CANCELLED
 const ELEVATED_EXIT_LAUNCH_FAILED = 1224
 const ELEVATED_EXIT_NO_PROCESS = 1225
 
-async function runSilentInstallElevated(
+/**
+ * Runs an installer .exe via PowerShell's Start-Process instead of Node's
+ * direct spawn. PowerShell tolerates Mark-of-the-Web flagged executables in
+ * %TEMP% that Node's CreateProcess sometimes refuses with EACCES, so this is
+ * also our default for the non-elevated path. When `useElevation` is true we
+ * additionally pass `-Verb RunAs`, which raises the UAC prompt for the
+ * installer alone — the launcher itself stays unelevated.
+ */
+async function runSilentInstallViaPowerShell(
   installerPath: string,
   args: string[],
   gameDir: string,
+  useElevation: boolean,
 ): Promise<void> {
   const argList = args.map((a) => `'${escapePowerShellSingleQuoted(a)}'`).join(",")
-  // We catch the exception that PowerShell raises when the user clicks "No" on
-  // the UAC prompt and translate it to a stable exit code. Same for the rare
-  // case where Start-Process returns nothing (no PassThru object).
+  const verbClause = useElevation ? "-Verb RunAs " : ""
   const psCommand = [
     `try { `,
     `  $proc = Start-Process -FilePath '${escapePowerShellSingleQuoted(installerPath)}' `,
     `    -ArgumentList ${argList} `,
     `    -WorkingDirectory '${escapePowerShellSingleQuoted(gameDir)}' `,
-    `    -Verb RunAs -Wait -PassThru -ErrorAction Stop; `,
+    `    ${verbClause}-Wait -PassThru -WindowStyle Hidden -ErrorAction Stop; `,
     `  if ($null -eq $proc) { exit ${ELEVATED_EXIT_NO_PROCESS} }; `,
     `  exit $proc.ExitCode `,
     `} catch [System.ComponentModel.Win32Exception] { `,
@@ -179,9 +158,8 @@ async function runSilentInstallElevated(
       fn()
     }
 
-    // INSTALL_TIMEOUT_MS counts wall-clock time including the user's UAC
-    // decision. Give them a generous window — clicking "No" should never race
-    // the timeout.
+    // INSTALL_TIMEOUT_MS counts wall-clock time including any UAC decision —
+    // give the user a generous window so clicking "No" never races a timeout.
     const timeout = setTimeout(() => {
       try {
         child.kill()
@@ -208,7 +186,13 @@ async function runSilentInstallElevated(
           return
         }
         if (code === ELEVATED_EXIT_LAUNCH_FAILED || code === ELEVATED_EXIT_NO_PROCESS) {
-          reject(new Error("No se pudo iniciar el instalador con permisos de administrador."))
+          reject(
+            new Error(
+              useElevation
+                ? "No se pudo iniciar el instalador con permisos de administrador."
+                : "No se pudo iniciar el instalador.",
+            ),
+          )
           return
         }
         reject(new Error(`El instalador terminó con código ${code}.`))
@@ -227,7 +211,7 @@ async function runSilentInstall(
   const writable = await canWriteToGameDir(gameDir)
   if (writable) {
     onProgress({ phase: "install", percent: 0, message: "Instalando SA:MP..." })
-    await runSilentInstallDirect(installerPath, args, gameDir)
+    await runSilentInstallViaPowerShell(installerPath, args, gameDir, false)
     return
   }
   onProgress({
@@ -235,7 +219,7 @@ async function runSilentInstall(
     percent: 0,
     message: "Acepta el aviso de Windows para instalar en la carpeta protegida.",
   })
-  await runSilentInstallElevated(installerPath, args, gameDir)
+  await runSilentInstallViaPowerShell(installerPath, args, gameDir, true)
 }
 
 async function cleanupSafe(dirPath: string): Promise<void> {
@@ -243,6 +227,23 @@ async function cleanupSafe(dirPath: string): Promise<void> {
     await fsp.rm(dirPath, { recursive: true, force: true })
   } catch {
     // intentional: cleanup is best-effort
+  }
+}
+
+/**
+ * Removes the NTFS Zone.Identifier alternate data stream that Windows attaches
+ * to files we wrote with content sourced over the network. Without this, the
+ * SmartScreen / Defender filter flags the file as "from the Internet" and may
+ * deny CreateProcess from a non-elevated shell with EACCES.
+ *
+ * Best-effort: failures are swallowed (file may not have the ADS at all,
+ * volume may be FAT, etc.).
+ */
+async function removeZoneIdentifier(filePath: string): Promise<void> {
+  try {
+    await fsp.unlink(`${filePath}:Zone.Identifier`)
+  } catch {
+    // intentional
   }
 }
 
@@ -352,6 +353,7 @@ async function downloadFilesToStaging(
         onProgress({ phase: "download", percent })
       },
     })
+    await removeZoneIdentifier(stagedPath)
     priorBytes += file.size
     staged.push({ manifest: file, stagedPath })
   }

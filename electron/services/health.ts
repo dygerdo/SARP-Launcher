@@ -1,19 +1,41 @@
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { app } from "electron"
-import { getGameDir } from "./paths"
+import { findMissingGtaItems, getGameDir, REQUIRED_GTA_DIRS, REQUIRED_GTA_FILES } from "./paths"
 
 export interface HealthCheckItem {
   ok: boolean
   detail?: string
 }
 
-export function checkGta(): HealthCheckItem {
-  const exe = join(getGameDir(), "gta_sa.exe")
-  if (!existsSync(exe)) {
-    return { ok: false, detail: "No encontramos gta_sa.exe junto al launcher." }
+export interface GtaHealthCheckItem extends HealthCheckItem {
+  /** True when *every* required file/dir is missing — an empty (or fake)
+   *  install. Used by the renderer to decide whether to offer "Instalar". */
+  missingAll: boolean
+}
+
+const TOTAL_REQUIRED = REQUIRED_GTA_FILES.length + REQUIRED_GTA_DIRS.length
+
+export function checkGta(): GtaHealthCheckItem {
+  const missing = findMissingGtaItems(getGameDir())
+  const all = [...missing.files, ...missing.dirs]
+  const missingAll = all.length === TOTAL_REQUIRED
+  if (all.length === 0) return { ok: true, missingAll: false }
+  if (missingAll) {
+    return {
+      ok: false,
+      missingAll: true,
+      detail: "No está instalado en esta carpeta.",
+    }
   }
-  return { ok: true }
+  if (all.length === 1) {
+    return { ok: false, missingAll: false, detail: `No encontramos ${all[0]} en la carpeta.` }
+  }
+  return {
+    ok: false,
+    missingAll: false,
+    detail: `Faltan en la carpeta: ${all.join(", ")}.`,
+  }
 }
 
 export function checkSamp(): HealthCheckItem {

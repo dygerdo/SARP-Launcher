@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue"
 import HealthCheckItem from "./HealthCheckItem.vue"
-import type { ItemAction } from "./HealthCheckItem.vue"
+import type { ItemAction, InlineAction } from "./HealthCheckItem.vue"
+import ModChip from "./ModChip.vue"
+import GtaInstallRow from "./GtaInstallRow.vue"
 import type { HealthEntry } from "@/stores/healthCheck"
 import { useHealthCheckStore } from "@/stores/healthCheck"
 import { useServerPing } from "@/composables/useServerPing"
@@ -26,15 +28,46 @@ watch(
   },
 )
 
-const disabled = computed(() => health.running || onCooldown.value || health.installing)
+const disabled = computed(
+  () => health.running || onCooldown.value || health.installing || health.gtaInstalling,
+)
 
 function handleRecheck() {
   if (disabled.value) return
   health.run()
 }
 
+function inlineActionFor(entry: HealthEntry): InlineAction | undefined {
+  if (entry.id !== "gta") return undefined
+  if (entry.state === "checking") return undefined
+  if (health.gtaInstalling) return undefined
+  return {
+    label: "Cambiar ubicación",
+    icon: "pi-folder-open",
+    title: "Selecciona la carpeta donde está instalado GTA: San Andreas",
+    onClick: () => health.pickGameDir(),
+  }
+}
+
 function actionFor(entry: HealthEntry): ItemAction | undefined {
+  if (entry.id === "gta") {
+    if (health.gtaInstalling) return undefined // GtaInstallRow takes over
+    if (health.gtaActionType === "install") {
+      return {
+        label: "Instalar",
+        variant: "primary",
+        onClick: () => health.installGta(),
+      }
+    }
+    return undefined
+  }
+
   if (entry.id !== "samp") return undefined
+  // No GTA → no destination folder we can install or repair into. Suppress
+  // the action entirely; the GTA item's own error message tells the user
+  // what to fix first.
+  const gtaEntry = health.entries.find((e) => e.id === "gta")
+  if (gtaEntry?.state !== "ok") return undefined
   if (health.installing) {
     const phase = health.installProgress?.phase
     const showProgress = phase === "download"
@@ -106,15 +139,35 @@ onMounted(() => {
       </button>
     </header>
     <div class="divide-y divide-white/5">
-      <HealthCheckItem
-        v-for="entry in health.entries"
-        :key="entry.id"
-        :label="entry.label"
-        :state="entry.state"
-        :detail="entry.detail"
-        :meta="entry.meta"
-        :action="actionFor(entry)"
-      />
+      <template v-for="entry in health.entries" :key="entry.id">
+        <GtaInstallRow
+          v-if="entry.id === 'gta' && health.gtaInstalling"
+          :progress="health.gtaInstallProgress"
+        />
+        <HealthCheckItem
+          v-else
+          :label="entry.label"
+          :state="entry.state"
+          :detail="entry.detail"
+          :meta="entry.meta"
+          :action="actionFor(entry)"
+          :inline-action="inlineActionFor(entry)"
+        >
+          <template
+            v-if="entry.id === 'gta' && entry.state === 'ok' && health.gtaMods.length > 0"
+            #extras
+          >
+            <div class="flex flex-shrink-0 flex-wrap items-center gap-1.5">
+              <ModChip
+                v-for="mod in health.gtaMods"
+                :id="mod.id"
+                :key="mod.id"
+                :label="mod.label"
+              />
+            </div>
+          </template>
+        </HealthCheckItem>
+      </template>
     </div>
   </section>
 </template>

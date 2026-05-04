@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import { registerIpcHandlers } from "./ipc/handlers"
 import { detectRunningGame } from "./services/launcher"
+import { sweepLauncherTemp } from "./services/tempSweep"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -44,6 +45,8 @@ app.whenReady().then(() => {
   registerIpcHandlers()
   createWindow()
   detectRunningGame()
+  // Fire-and-forget — never block window creation on filesystem I/O.
+  sweepLauncherTemp().catch(() => undefined)
 })
 
 app.on("window-all-closed", () => {
