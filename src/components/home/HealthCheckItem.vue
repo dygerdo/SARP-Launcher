@@ -33,6 +33,11 @@ const props = defineProps<{
   state: CheckState
   detail?: string
   meta?: string
+  /** When true, the subline area keeps its height even when there's no
+   *  text to show. Used by rows that toggle between a 1-line "checking"
+   *  state and a 2-line resolved state — without this, the row visibly
+   *  expands the moment the meta string arrives. */
+  reserveSublineSpace?: boolean
   action?: ItemAction
   inlineAction?: InlineAction
 }>()
@@ -106,6 +111,13 @@ const actionProgressFillClass = computed(() =>
           :class="subline.kind === 'detail' ? 'text-white/50' : 'text-white/40'"
         >
           {{ subline.text }}
+        </span>
+        <span
+          v-else-if="reserveSublineSpace"
+          class="block w-full text-xs leading-snug"
+          aria-hidden="true"
+        >
+          &nbsp;
         </span>
         <slot name="extras" />
       </div>

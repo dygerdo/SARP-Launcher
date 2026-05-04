@@ -163,6 +163,7 @@ onMounted(() => {
           :state="entry.state"
           :detail="entry.detail"
           :meta="entry.meta"
+          :reserve-subline-space="entry.id === 'server'"
           :action="actionFor(entry)"
           :inline-action="inlineActionFor(entry)"
         >
