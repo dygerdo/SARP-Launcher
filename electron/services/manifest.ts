@@ -22,6 +22,12 @@ export interface ManifestGtaRipEntry {
   size: number
 }
 
+export interface ManifestServerCacheEntry {
+  filename: string
+  url: string
+  size: number
+}
+
 export interface LauncherManifest {
   schemaVersion: number
   generatedAt: string
@@ -31,6 +37,9 @@ export interface LauncherManifest {
   }
   gta: {
     rip: ManifestGtaRipEntry
+  }
+  cache: {
+    zip: ManifestServerCacheEntry
   }
 }
 
@@ -56,6 +65,9 @@ function isValidManifest(value: unknown): value is LauncherManifest {
   if (!m.samp.installer || typeof m.samp.installer !== "object") return false
   if (!m.gta || typeof m.gta !== "object") return false
   if (!m.gta.rip || typeof m.gta.rip !== "object") return false
+  if (!m.cache || typeof m.cache !== "object") return false
+  if (!m.cache.zip || typeof m.cache.zip !== "object") return false
+  if (typeof m.cache.zip.size !== "number") return false
   return true
 }
 

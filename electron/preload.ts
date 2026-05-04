@@ -15,6 +15,7 @@ import type { InstallProgress, InstallResult } from "./services/sampInstall"
 import type { PickGameDirResult } from "./services/paths"
 import type { DetectedMod } from "./services/gtaMods"
 import type { GtaInstallProgress, GtaInstallResult } from "./services/gtaInstall"
+import type { CacheInstallProgress, CacheInstallResult } from "./services/cacheInstall"
 
 const launcherApi = {
   getGameDir: (): Promise<string> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
@@ -76,6 +77,15 @@ const launcherApi = {
     const listener = (_event: IpcRendererEvent, progress: InstallProgress) => callback(progress)
     ipcRenderer.on(IPC.SAMP_INSTALL_PROGRESS, listener)
     return () => ipcRenderer.off(IPC.SAMP_INSTALL_PROGRESS, listener)
+  },
+
+  installCache: (): Promise<CacheInstallResult> => ipcRenderer.invoke(IPC.CACHE_INSTALL),
+
+  onCacheInstallProgress: (callback: (progress: CacheInstallProgress) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, progress: CacheInstallProgress) =>
+      callback(progress)
+    ipcRenderer.on(IPC.CACHE_INSTALL_PROGRESS, listener)
+    return () => ipcRenderer.off(IPC.CACHE_INSTALL_PROGRESS, listener)
   },
 
   minimize: (): void => ipcRenderer.send(IPC.WINDOW_MINIMIZE),

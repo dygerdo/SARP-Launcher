@@ -29,12 +29,20 @@ watch(
 )
 
 const disabled = computed(
-  () => health.running || onCooldown.value || health.installing || health.gtaInstalling,
+  () =>
+    health.running ||
+    onCooldown.value ||
+    health.installing ||
+    health.gtaInstalling ||
+    health.cacheInstalling,
 )
 
 function handleRecheck() {
   if (disabled.value) return
-  health.run()
+  // Manual refresh runs even while the game is open — the user is
+  // explicitly asking for it, and it skips the auto-install branch anyway
+  // unless the game has already been closed.
+  health.run({ force: true })
 }
 
 function inlineActionFor(entry: HealthEntry): InlineAction | undefined {
@@ -143,6 +151,11 @@ onMounted(() => {
         <GtaInstallRow
           v-if="entry.id === 'gta' && health.gtaInstalling"
           :progress="health.gtaInstallProgress"
+        />
+        <GtaInstallRow
+          v-else-if="entry.id === 'cache' && health.cacheInstalling"
+          :progress="health.cacheInstallProgress"
+          download-title="Descargando caché del servidor"
         />
         <HealthCheckItem
           v-else

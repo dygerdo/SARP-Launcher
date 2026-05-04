@@ -2,9 +2,13 @@
 import { computed, onBeforeUnmount, ref, watch } from "vue"
 import type { GtaInstallProgress } from "../../../electron/services/gtaInstall"
 
-const props = defineProps<{
-  progress: GtaInstallProgress | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    progress: GtaInstallProgress | null
+    downloadTitle?: string
+  }>(),
+  { downloadTitle: "Descargando GTA: San Andreas" },
+)
 
 function formatBytes(bytes: number | undefined): string {
   if (bytes === undefined || bytes === null) return ""
@@ -26,7 +30,7 @@ const title = computed(() => {
     case "preflight":
       return "Preparando instalación..."
     case "download":
-      return "Descargando GTA: San Andreas"
+      return props.downloadTitle
     case "verify":
       return "Verificando archivo..."
     case "extract":

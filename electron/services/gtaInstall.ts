@@ -94,7 +94,7 @@ async function canWriteToDir(path: string): Promise<boolean> {
   }
 }
 
-async function sha256OfFile(path: string): Promise<string> {
+export async function sha256OfFile(path: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const hash = createHash("sha256")
     const stream = createReadStream(path)
@@ -104,24 +104,30 @@ async function sha256OfFile(path: string): Promise<string> {
   })
 }
 
-interface DownloadOpts {
+export interface DownloadOpts {
   url: string
   destPath: string
   expectedSize: number
-  expectedSha256: string
+  /** Optional. When present, a fully-downloaded file on disk is hashed and
+   *  reused only if the hash matches. When absent, size match is enough. */
+  expectedSha256?: string
   onProgress: GtaInstallProgressCallback
 }
 
-async function downloadWithResume(opts: DownloadOpts): Promise<void> {
+export async function downloadWithResume(opts: DownloadOpts): Promise<void> {
   const { url, destPath, expectedSize, expectedSha256, onProgress } = opts
 
-  // If we already have something on disk, validate that it's a usable resume
-  // candidate. If it's already complete and matches the hash, skip the download
-  // entirely — saves an HTTP roundtrip on retries.
+  // If we already have something on disk, decide whether to reuse / resume
+  // / discard it. Without a sha256 we can't tell whether a same-sized blob
+  // is actually the file we want (it might be a leftover from a different
+  // version of the same key), so the safe move is to start clean.
   let resumeFrom = 0
   if (existsSync(destPath)) {
     const existingSize = statSync(destPath).size
-    if (existingSize === expectedSize) {
+
+    if (!expectedSha256) {
+      await fsp.unlink(destPath)
+    } else if (existingSize === expectedSize) {
       const sha = await sha256OfFile(destPath)
       if (sha === expectedSha256) {
         onProgress({
@@ -132,7 +138,6 @@ async function downloadWithResume(opts: DownloadOpts): Promise<void> {
         })
         return
       }
-      // wrong hash → start over
       await fsp.unlink(destPath)
     } else if (existingSize < expectedSize) {
       resumeFrom = existingSize
@@ -174,9 +179,12 @@ async function downloadWithResume(opts: DownloadOpts): Promise<void> {
 
     request.on("response", (response) => {
       const status = response.statusCode ?? 0
-      // 206 Partial Content for resume; 200 if server ignored Range.
-      if (status === 200 && resumeFrom > 0) {
-        // Server didn't honour our Range — restart from zero by truncating.
+      // 206 Partial Content for resume; 200 if server ignored Range; 416 when
+      // our resume offset is past the end of the (now smaller) object on the
+      // server — happens when the upstream file changed between attempts.
+      // In both the 200-without-Range and 416 cases the right move is to
+      // wipe the partial and restart from byte zero.
+      if ((status === 200 && resumeFrom > 0) || status === 416) {
         writer.end()
         clearTimeout(timeout)
         settled = true
@@ -187,7 +195,7 @@ async function downloadWithResume(opts: DownloadOpts): Promise<void> {
         return
       }
       if (status !== 200 && status !== 206) {
-        fail(new Error(`HTTP ${status} al descargar GTA_RIP.zip.`))
+        fail(new Error(`HTTP ${status} al descargar el archivo.`))
         return
       }
 
@@ -249,7 +257,7 @@ function escapePowerShellSingleQuoted(value: string): string {
  * (and the executables we then extract) as "from the Internet", which can
  * deny CreateProcess from a non-elevated context with EACCES. Best-effort.
  */
-async function removeZoneIdentifier(filePath: string): Promise<void> {
+export async function removeZoneIdentifier(filePath: string): Promise<void> {
   try {
     await fsp.unlink(`${filePath}:Zone.Identifier`)
   } catch {
@@ -310,7 +318,7 @@ function isUnsafeEntryPath(rel: string): boolean {
  * - Progress in real (uncompressed) bytes, not entry count, so the bar moves
  *   proportionally to time when entries vary in size.
  */
-async function extractDirect(
+export async function extractDirect(
   zipPath: string,
   targetDir: string,
   onProgress: GtaInstallProgressCallback,

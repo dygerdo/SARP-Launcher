@@ -5,11 +5,14 @@ import type { SampVerificationResult } from "../../electron/services/sampVerify"
 import type { InstallProgress } from "../../electron/services/sampInstall"
 import type { DetectedMod } from "../../electron/services/gtaMods"
 import type { GtaInstallProgress } from "../../electron/services/gtaInstall"
+import type { CacheInstallProgress } from "../../electron/services/cacheInstall"
 import { useDialogStore } from "@/stores/dialog"
 
 export type GtaActionType = "install" | null
 
 export type SampActionType = "install" | "repair" | null
+
+export type CacheActionType = "install" | "update" | null
 
 export type CheckState = "checking" | "ok" | "warning" | "error"
 
@@ -24,7 +27,7 @@ export interface HealthEntry {
 const INITIAL: HealthEntry[] = [
   { id: "gta", label: "GTA: San Andreas", state: "checking" },
   { id: "samp", label: "SA:MP", state: "checking" },
-  { id: "cache", label: "Cache del servidor", state: "checking" },
+  { id: "cache", label: "Caché de modelos", state: "checking" },
   { id: "server", label: "Conexión con el servidor", state: "checking" },
 ]
 
@@ -83,8 +86,28 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
   const gtaMissingAll = ref<boolean>(false)
   const gtaInstalling = ref<boolean>(false)
   const gtaInstallProgress = ref<GtaInstallProgress | null>(null)
+  const cacheInstalling = ref<boolean>(false)
+  const cacheInstallProgress = ref<CacheInstallProgress | null>(null)
+  const cacheActionType = ref<CacheActionType>(null)
+  // Mirror of the OS-level "gta_sa.exe is alive" status. While the game is
+  // running we suppress every automatic health re-check and every cache
+  // re-download, so we don't fight the game for disk and bandwidth.
+  const gameRunning = ref<boolean>(false)
   const serverPing = useServerPing()
   const dialog = useDialogStore()
+
+  // Bootstrap the game-status mirror and keep it in sync with the OS.
+  void window.launcher.getGameStatus().then((status) => {
+    gameRunning.value = status.running
+  })
+  window.launcher.onGameStatusChanged((status) => {
+    const wasRunning = gameRunning.value
+    gameRunning.value = status.running
+    // When the user closes the game, the cache may have changed upstream
+    // and the launcher couldn't know — re-run the checks so the next thing
+    // they see reflects reality (and any auto-update can finally fire).
+    if (wasRunning && !status.running) void run()
+  })
 
   const allOk = computed(() =>
     entries.value.filter((e) => e.id !== "server").every((e) => e.state === "ok"),
@@ -106,6 +129,7 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     entries.value = INITIAL.map((e) => ({ ...e }))
     gtaMods.value = []
     gtaMissingAll.value = false
+    cacheActionType.value = null
   }
 
   function syncServerEntry() {
@@ -182,8 +206,34 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
 
   async function checkCache(): Promise<void> {
     const health = await window.launcher.healthCheck()
+    const gtaOk = entries.value.find((e) => e.id === "gta")?.state === "ok"
+    const sampOk = entries.value.find((e) => e.id === "samp")?.state === "ok"
+
+    if (health.cache.ok) {
+      cacheActionType.value = null
+      update("cache", { state: "ok", detail: undefined })
+      return
+    }
+
+    cacheActionType.value = health.cache.needsInstall
+      ? "install"
+      : health.cache.needsUpdate
+        ? "update"
+        : null
+
+    // Don't surface the cache problem as an error while GTA or SA:MP are
+    // still missing — installing the cache only makes sense once the game
+    // can actually use it. Show a warning explaining the wait instead.
+    if (!gtaOk || !sampOk) {
+      update("cache", {
+        state: "warning",
+        detail: "Esperando a que GTA y SA:MP estén listos.",
+      })
+      return
+    }
+
     update("cache", {
-      state: health.cache.ok ? "ok" : "error",
+      state: "error",
       detail: health.cache.detail,
     })
   }
@@ -196,13 +246,38 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     }
   }
 
-  async function run(): Promise<void> {
+  async function run(options: { force?: boolean } = {}): Promise<void> {
+    // While the game is running every check (sha256-of-samp files, recursive
+    // dir reads, manifest fetch) competes with the game for I/O and CPU.
+    // Skip silently — the next on-game-close event re-runs us. The user can
+    // still force a re-check via the refresh button.
+    if (gameRunning.value && !options.force) return
+
     running.value = true
     reset()
-    await Promise.all([checkGta(), checkSamp(), checkCache(), checkElevation()])
+    // GTA + SAMP must resolve before checkCache so it can decide whether to
+    // raise the cache problem as an error or stay in warning until they're
+    // both ready.
+    await Promise.all([checkGta(), checkSamp(), checkElevation()])
+    await checkCache()
     await serverPing.ping()
     syncServerEntry()
     running.value = false
+
+    // Auto-trigger cache install/update only when GTA and SAMP are healthy,
+    // and never while the game is running (a 700 MB download in parallel
+    // with the game would tank both).
+    const gtaOk = entries.value.find((e) => e.id === "gta")?.state === "ok"
+    const sampOk = entries.value.find((e) => e.id === "samp")?.state === "ok"
+    if (
+      gtaOk &&
+      sampOk &&
+      !gameRunning.value &&
+      cacheActionType.value !== null &&
+      !cacheInstalling.value
+    ) {
+      void installCache()
+    }
   }
 
   function describeInstallProgress(progress: InstallProgress): string {
@@ -265,6 +340,32 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     return { ok: false, error: result.error }
   }
 
+  async function installCache(): Promise<void> {
+    if (cacheInstalling.value) return
+    cacheInstalling.value = true
+    cacheInstallProgress.value = { phase: "preflight", percent: 0 }
+
+    const detach = window.launcher.onCacheInstallProgress((progress) => {
+      cacheInstallProgress.value = progress
+    })
+
+    try {
+      const result = await window.launcher.installCache()
+      if (!result.ok) {
+        const error = result.error ?? "La instalación del caché falló."
+        update("cache", { state: "error", detail: error })
+        void dialog.error("Error al instalar el caché", error)
+        return
+      }
+      // Re-run health checks to re-count files and clear the action.
+      await checkCache()
+    } finally {
+      detach()
+      cacheInstalling.value = false
+      cacheInstallProgress.value = null
+    }
+  }
+
   async function installGta(): Promise<{ ok: boolean; cancelled?: boolean; error?: string }> {
     if (gtaInstalling.value) return { ok: false, error: "Ya hay una instalación en curso." }
 
@@ -312,8 +413,13 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     gtaActionType,
     gtaInstalling,
     gtaInstallProgress,
+    cacheInstalling,
+    cacheInstallProgress,
+    cacheActionType,
+    gameRunning,
     run,
     installSamp,
+    installCache,
     pickGameDir,
     installGta,
   }

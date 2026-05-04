@@ -9,6 +9,8 @@ import { detectGtaMods } from "../services/gtaMods"
 import type { DetectedMod } from "../services/gtaMods"
 import { installGta } from "../services/gtaInstall"
 import type { GtaInstallProgress, GtaInstallResult } from "../services/gtaInstall"
+import { installCache } from "../services/cacheInstall"
+import type { CacheInstallProgress, CacheInstallResult } from "../services/cacheInstall"
 import { checkCache, checkGta, checkSamp } from "../services/health"
 import { getGameStatus, launchGame } from "../services/launcher"
 import { cdnGet } from "../services/cdn"
@@ -36,11 +38,8 @@ export function registerIpcHandlers() {
   ipcMain.handle(IPC.GAME_DIR_GET, async () => getGameDir())
 
   ipcMain.handle(IPC.HEALTH_CHECK, async (): Promise<HealthCheckPayload> => {
-    return {
-      gta: checkGta(),
-      samp: checkSamp(),
-      cache: checkCache(),
-    }
+    const [gta, samp, cache] = [checkGta(), checkSamp(), await checkCache()]
+    return { gta, samp, cache }
   })
 
   ipcMain.handle(IPC.GAME_LAUNCH, async (_event, payload: GameLaunchPayload) => {
@@ -125,6 +124,14 @@ export function registerIpcHandlers() {
       return result
     },
   )
+
+  ipcMain.handle(IPC.CACHE_INSTALL, async (event): Promise<CacheInstallResult> => {
+    const send = (progress: CacheInstallProgress) => {
+      if (event.sender.isDestroyed()) return
+      event.sender.send(IPC.CACHE_INSTALL_PROGRESS, progress)
+    }
+    return installCache(send)
+  })
 
   ipcMain.on(IPC.WINDOW_MINIMIZE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.minimize()

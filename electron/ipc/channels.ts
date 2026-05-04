@@ -21,6 +21,8 @@ export const IPC = {
   GTA_MODS_DETECT: "gta:mods:detect",
   GTA_INSTALL: "gta:install",
   GTA_INSTALL_PROGRESS: "gta:install:progress",
+  CACHE_INSTALL: "cache:install",
+  CACHE_INSTALL_PROGRESS: "cache:install:progress",
 } as const
 
 export interface GameStatus {
@@ -38,7 +40,14 @@ export interface CdnResponse<T = unknown> {
 export interface HealthCheckPayload {
   gta: { ok: boolean; detail?: string; missingAll: boolean }
   samp: { ok: boolean; detail?: string }
-  cache: { ok: boolean; detail?: string }
+  cache: {
+    ok: boolean
+    detail?: string
+    needsInstall: boolean
+    needsUpdate: boolean
+    expectedFileCount?: number
+    actualFileCount?: number
+  }
 }
 
 export interface GameLaunchPayload {
