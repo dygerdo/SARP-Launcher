@@ -1,5 +1,5 @@
 {
-  "appId": "es.sarp.launcher",
+  "appId": "sarp.es.launcher",
   "productName": "San Andreas Roleplay - SA:MP Launcher",
   "directories": {
     "output": "release/${version}",
@@ -15,17 +15,28 @@
   ],
   "publish": {
     "provider": "generic",
-    "url": "https://sarp-public.b-cdn.net/launcher/"
+    "url": "https://sarp-public.b-cdn.net/launcher/",
+    "channel": "latest"
   },
   "win": {
     "target": [
       {
-        "target": "portable",
+        "target": "nsis",
         "arch": ["x64"]
       }
     ],
     "icon": "public/favicon.ico",
     "publisherName": "San Andreas Roleplay",
-    "artifactName": "SARP-SAMP-Launcher-${version}.${ext}"
+    "artifactName": "SARP-SAMP-Launcher-Setup-${version}.${ext}"
+  },
+  "nsis": {
+    "oneClick": true,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": false,
+    "createDesktopShortcut": false,
+    "createStartMenuShortcut": true,
+    "shortcutName": "SARP Launcher",
+    "differentialPackage": true,
+    "deleteAppDataOnUninstall": false
   }
 }

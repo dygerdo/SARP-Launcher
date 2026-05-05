@@ -108,9 +108,10 @@ launcher/
 
 ### Versionado
 
-- Versión del launcher se muestra en la splash (`v1.0.0` minúscula, sin `uppercase`).
-- El usuario instala una vez. Las v2, v3, v4 llegan vía **electron-updater desde Bunny CDN** (`https://sarp-public.b-cdn.net/launcher/`).
-- Releases publican `latest.yml` + `.exe` + `.blockmap` al CDN. El launcher revisa al arrancar.
+- Versión del launcher se lee de `app.getVersion()` (= `package.json:version`) y se muestra en el footer del `ShellLayout`. Bumpear la versión solo requiere editar `package.json`.
+- El usuario instala una vez. Las v1.0.x, v1.1.x, etc. llegan vía **electron-updater desde Bunny CDN** (`https://sarp-public.b-cdn.net/launcher/`).
+- Releases publican `latest.yml` + `SARP-SAMP-Launcher-Setup-${version}.exe` + `*.exe.blockmap` al CDN. El launcher revisa al arrancar (`autoUpdater.checkForUpdates`), descarga en background (`autoDownload: true`) y aplica al cerrar (`autoInstallOnAppQuit: true`) o cuando el usuario clickea "Reiniciar para aplicar" en el `UpdaterBanner`.
+- El `.blockmap` es lo que habilita los **delta updates**: electron-updater sólo baja los bloques que cambiaron entre versiones. Si se olvida subir el blockmap al CDN, igual funciona el update — pero descarga el .exe entero.
 
 ### Auth (v1)
 
@@ -119,11 +120,10 @@ launcher/
 
 ### Distribución y ubicación del launcher
 
-- **El launcher es un único `.exe` portable** (electron-builder `target: "portable"`). Se ejecuta desde donde el usuario lo deje (Descargas, Escritorio, USB…), sin instalación, sin entradas en registry ni Start Menu.
+- **El launcher se distribuye como NSIS one-click per-user** (electron-builder `target: "nsis"` con `oneClick: true` + `perMachine: false`). El instalador no pide UAC, instala silenciosamente en `%LOCALAPPDATA%\Programs\San Andreas Roleplay - SA-MP Launcher\`, agrega un shortcut en el Start Menu y una entrada en _Aplicaciones y características_. El motivo de NSIS (en vez de portable) es que `electron-updater` solo soporta NSIS en Windows — portable no genera `latest.yml` ni `app-update.yml` y los updates fallan.
 - **La carpeta de GTA es un dato gestionado dentro de la app**, no algo que un wizard configura por adelantado. `getGameDir()` devuelve `string | null`: hasta que el usuario elige carpeta válida es `null` y los health checks reportan error con un botón _"Cambiar ubicación"_ visible.
-- **Flujo de primera apertura**: el usuario abre el `.exe` → health check muestra GTA en error → clic en _"Cambiar ubicación"_ → elige `C:\…\GTA San Andreas` → se guarda en `electron-store` y se crea `SARP Launcher.lnk` dentro de esa carpeta apuntando al `.exe` portable. El shortcut es idempotente: cambiar de carpeta repointea el `.lnk` en la nueva, no borra el de la anterior.
-- **Importante**: el shortcut apunta a `process.env.PORTABLE_EXECUTABLE_FILE` (la ruta real del `.exe` portable), no a `app.getPath("exe")` — en modo portable Electron extrae a un temp dir transitorio y esa ruta desaparece entre ejecuciones.
-- **En dev** (`yarn dev`), la ruta de GTA se simula vía `DEV_GTA_PATH` en `.env` y los shortcuts no se crean (`app.isPackaged` guard).
+- **Flujo de primera apertura**: el usuario abre el launcher → health check muestra GTA en error → clic en _"Cambiar ubicación"_ → elige `C:\…\GTA San Andreas` → se guarda en `electron-store` y se crea `SARP Launcher.lnk` dentro de esa carpeta apuntando al `.exe` instalado. El shortcut es idempotente: cambiar de carpeta repointea el `.lnk` en la nueva, no borra el de la anterior.
+- **En dev** (`yarn dev`), la ruta de GTA se simula vía `DEV_GTA_PATH` en `.env`, los shortcuts no se crean (`app.isPackaged` guard) y el `autoUpdater` no corre.
 
 ### Funcionalidades v1
 

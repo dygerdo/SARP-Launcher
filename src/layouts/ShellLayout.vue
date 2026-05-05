@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { onMounted, ref } from "vue"
 import TitleBar from "@/components/brand/TitleBar.vue"
+import UpdaterBanner from "@/components/brand/UpdaterBanner.vue"
 import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
 
 withDefaults(
@@ -11,9 +13,15 @@ withDefaults(
   },
 )
 
-const version = "v1.0.0"
+// Version is read from app.getVersion() so package.json is the single source
+// of truth — no hardcoded "v1.0.0" to forget on each release bump.
+const version = ref<string>("")
 const buildId = "dev"
 const currentYear = new Date().getFullYear()
+
+onMounted(async () => {
+  version.value = await window.launcher.getAppVersion()
+})
 
 defineSlots<{
   default(): unknown
@@ -28,7 +36,7 @@ function openSite() {
 
 <template>
   <div
-    class="relative h-screen w-screen overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
+    class="relative flex h-screen w-screen flex-col overflow-hidden bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
   >
     <div
       class="pointer-events-none absolute inset-0 bg-[url('/background.png')] bg-cover bg-top opacity-[0.35] mix-blend-screen"
@@ -39,10 +47,11 @@ function openSite() {
     />
 
     <TitleBar />
+    <UpdaterBanner />
 
     <slot v-if="$slots.belowHeader" name="belowHeader" />
 
-    <main class="relative z-10 flex h-[calc(100%-64px)] flex-col items-center justify-center px-10">
+    <main class="relative z-10 flex flex-1 flex-col items-center justify-center px-10">
       <Transition name="shell-fade" mode="out-in">
         <div
           v-if="loading && $slots.skeleton"
@@ -71,7 +80,7 @@ function openSite() {
           sarp.es
         </button>
       </div>
-      <span class="font-mono normal-case">{{ version }} ({{ buildId }})</span>
+      <span class="font-mono normal-case">v{{ version }} ({{ buildId }})</span>
     </footer>
   </div>
 </template>

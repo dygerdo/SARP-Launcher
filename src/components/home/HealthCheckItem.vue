@@ -123,7 +123,7 @@ const actionProgressFillClass = computed(() =>
       </div>
     </div>
     <button
-      v-if="inlineAction && !action"
+      v-if="inlineAction"
       type="button"
       class="mt-0.5 inline-flex h-7 flex-shrink-0 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-xs font-medium text-white/70 transition-colors duration-150 hover:border-white/30 hover:bg-white/[0.04] hover:text-white/95"
       :title="inlineAction.title ?? inlineAction.label"

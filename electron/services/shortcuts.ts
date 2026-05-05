@@ -15,12 +15,10 @@ export async function ensureGameFolderShortcut(gameDir: string): Promise<void> {
   if (!app.isPackaged) return // dev mode: don't litter shortcuts
   if (process.platform !== "win32") return
   try {
-    // In portable mode the .exe self-extracts to a temp dir on each launch,
-    // so app.getPath("exe") points at a transient path that disappears when
-    // the process exits. electron-builder exposes the real portable .exe via
-    // PORTABLE_EXECUTABLE_FILE — that's what the shortcut must reference so
-    // it keeps working between runs.
-    const target = process.env.PORTABLE_EXECUTABLE_FILE ?? app.getPath("exe")
+    // NSIS installs the launcher to a stable per-user path
+    // (%LOCALAPPDATA%\Programs\<app>\<app>.exe), so app.getPath("exe") is the
+    // right target for the shortcut.
+    const target = app.getPath("exe")
     const shortcutPath = join(gameDir, SHORTCUT_FILENAME)
     shell.writeShortcutLink(shortcutPath, "create", {
       target,

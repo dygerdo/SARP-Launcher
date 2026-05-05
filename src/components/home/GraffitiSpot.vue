@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, useTemplateRef } from "vue"
+import spray1Url from "@/assets/tag/spray_1.aac?url"
+import spray2Url from "@/assets/tag/spray_2.aac?url"
+import graffiti1Url from "@/assets/tag/graffiti_1.png"
+import graffiti2Url from "@/assets/tag/graffiti_2.png"
 
 const COVERAGE_TARGET = 0.8
 const CANVAS_SIZE = 96
@@ -11,11 +15,13 @@ const hovering = ref(false)
 const cursor = ref({ x: 0, y: 0 })
 const canvasRef = useTemplateRef<HTMLCanvasElement>("canvasRef")
 
-const spray1 = new Audio("/tag/spray_1.aac")
+const graffiti2MaskUrl = `url(${graffiti2Url})`
+
+const spray1 = new Audio(spray1Url)
 spray1.loop = true
 spray1.volume = 0.6
 
-const spray2 = new Audio("/tag/spray_2.aac")
+const spray2 = new Audio(spray2Url)
 spray2.volume = 0.8
 
 let pressing = false
@@ -117,7 +123,7 @@ onBeforeUnmount(() => {
     @mouseup="stopSpray"
   >
     <img
-      src="/tag/graffiti_1.png"
+      :src="graffiti1Url"
       alt=""
       class="pointer-events-none absolute inset-0 h-full w-full object-contain"
       draggable="false"
@@ -131,7 +137,7 @@ onBeforeUnmount(() => {
     />
     <img
       v-if="sprayed"
-      src="/tag/graffiti_2.png"
+      :src="graffiti2Url"
       alt=""
       class="graffiti-2 pointer-events-none absolute inset-0 h-full w-full object-contain"
       draggable="false"
@@ -150,11 +156,11 @@ onBeforeUnmount(() => {
 }
 
 .spray-canvas {
-  -webkit-mask-image: url("/tag/graffiti_2.png");
+  -webkit-mask-image: v-bind(graffiti2MaskUrl);
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
   -webkit-mask-size: contain;
-  mask-image: url("/tag/graffiti_2.png");
+  mask-image: v-bind(graffiti2MaskUrl);
   mask-repeat: no-repeat;
   mask-position: center;
   mask-size: contain;

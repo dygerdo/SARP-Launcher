@@ -16,6 +16,7 @@ import type { PickGameDirResult } from "./services/paths"
 import type { DetectedMod } from "./services/gtaMods"
 import type { GtaInstallProgress, GtaInstallResult } from "./services/gtaInstall"
 import type { CacheInstallProgress, CacheInstallResult } from "./services/cacheInstall"
+import type { UpdaterAvailable, UpdaterDownloaded, UpdaterProgress } from "./services/updater"
 
 const launcherApi = {
   getGameDir: (): Promise<string | null> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
@@ -93,6 +94,34 @@ const launcherApi = {
   close: (): void => ipcRenderer.send(IPC.WINDOW_CLOSE),
 
   openExternal: (url: string): void => ipcRenderer.send(IPC.SHELL_OPEN_EXTERNAL, url),
+
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke(IPC.APP_GET_VERSION),
+
+  onUpdaterAvailable: (callback: (info: UpdaterAvailable) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, info: UpdaterAvailable) => callback(info)
+    ipcRenderer.on(IPC.UPDATER_AVAILABLE, listener)
+    return () => ipcRenderer.off(IPC.UPDATER_AVAILABLE, listener)
+  },
+
+  onUpdaterProgress: (callback: (progress: UpdaterProgress) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, progress: UpdaterProgress) => callback(progress)
+    ipcRenderer.on(IPC.UPDATER_PROGRESS, listener)
+    return () => ipcRenderer.off(IPC.UPDATER_PROGRESS, listener)
+  },
+
+  onUpdaterDownloaded: (callback: (info: UpdaterDownloaded) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, info: UpdaterDownloaded) => callback(info)
+    ipcRenderer.on(IPC.UPDATER_DOWNLOADED, listener)
+    return () => ipcRenderer.off(IPC.UPDATER_DOWNLOADED, listener)
+  },
+
+  onUpdaterError: (callback: (message: string) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, message: string) => callback(message)
+    ipcRenderer.on(IPC.UPDATER_ERROR, listener)
+    return () => ipcRenderer.off(IPC.UPDATER_ERROR, listener)
+  },
+
+  quitAndInstall: (): Promise<void> => ipcRenderer.invoke(IPC.UPDATER_QUIT_AND_INSTALL),
 }
 
 export type LauncherApi = typeof launcherApi

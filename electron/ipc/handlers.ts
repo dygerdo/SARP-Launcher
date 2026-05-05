@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, shell } from "electron"
+import { app, BrowserWindow, ipcMain, shell } from "electron"
 import { IPC } from "./channels"
 import type { GameLaunchPayload, HealthCheckPayload } from "./channels"
 import store from "../services/store"
@@ -21,6 +21,7 @@ import { verifySampFiles } from "../services/sampVerify"
 import type { SampVerificationResult } from "../services/sampVerify"
 import { installSamp, canWriteToGameDir } from "../services/sampInstall"
 import type { InstallProgress, InstallResult } from "../services/sampInstall"
+import { quitAndInstall } from "../services/updater"
 
 export function registerIpcHandlers() {
   ipcMain.handle(IPC.STORE_GET, async (_event, key: keyof LauncherStoreSchema) => {
@@ -136,6 +137,12 @@ export function registerIpcHandlers() {
       event.sender.send(IPC.CACHE_INSTALL_PROGRESS, progress)
     }
     return installCache(send)
+  })
+
+  ipcMain.handle(IPC.APP_GET_VERSION, async (): Promise<string> => app.getVersion())
+
+  ipcMain.handle(IPC.UPDATER_QUIT_AND_INSTALL, async () => {
+    quitAndInstall()
   })
 
   ipcMain.on(IPC.WINDOW_MINIMIZE, (event) => {

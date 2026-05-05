@@ -23,6 +23,12 @@ export const IPC = {
   GTA_INSTALL_PROGRESS: "gta:install:progress",
   CACHE_INSTALL: "cache:install",
   CACHE_INSTALL_PROGRESS: "cache:install:progress",
+  APP_GET_VERSION: "app:get-version",
+  UPDATER_AVAILABLE: "updater:available",
+  UPDATER_PROGRESS: "updater:progress",
+  UPDATER_DOWNLOADED: "updater:downloaded",
+  UPDATER_ERROR: "updater:error",
+  UPDATER_QUIT_AND_INSTALL: "updater:quit-and-install",
 } as const
 
 export interface GameStatus {
