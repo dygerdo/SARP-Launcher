@@ -26,7 +26,15 @@ export interface CacheHealthCheckItem extends HealthCheckItem {
 const TOTAL_REQUIRED = REQUIRED_GTA_FILES.length + REQUIRED_GTA_DIRS.length
 
 export function checkGta(): GtaHealthCheckItem {
-  const missing = findMissingGtaItems(getGameDir())
+  const gameDir = getGameDir()
+  if (!gameDir) {
+    return {
+      ok: false,
+      missingAll: true,
+      detail: "Aún no has elegido la carpeta de GTA: San Andreas.",
+    }
+  }
+  const missing = findMissingGtaItems(gameDir)
   const all = [...missing.files, ...missing.dirs]
   const missingAll = all.length === TOTAL_REQUIRED
   if (all.length === 0) return { ok: true, missingAll: false }
@@ -48,7 +56,11 @@ export function checkGta(): GtaHealthCheckItem {
 }
 
 export function checkSamp(): HealthCheckItem {
-  const exe = join(getGameDir(), "samp.exe")
+  const gameDir = getGameDir()
+  if (!gameDir) {
+    return { ok: false, detail: "Elige primero la carpeta de GTA: San Andreas." }
+  }
+  const exe = join(gameDir, "samp.exe")
   if (!existsSync(exe)) {
     return { ok: false, detail: "Falta samp.exe. Vuelve a abrir el launcher para descargarlo." }
   }

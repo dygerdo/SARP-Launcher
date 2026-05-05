@@ -20,26 +20,12 @@
   "win": {
     "target": [
       {
-        "target": "nsis",
+        "target": "portable",
         "arch": ["x64"]
       }
     ],
     "icon": "public/favicon.ico",
     "publisherName": "San Andreas Roleplay",
-    "artifactName": "SARP-SAMP-Launcher-Setup-${version}.${ext}"
-  },
-  "nsis": {
-    "oneClick": false,
-    "perMachine": true,
-    "allowToChangeInstallationDirectory": true,
-    "allowElevation": true,
-    "deleteAppDataOnUninstall": false,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "SARP SA:MP Launcher",
-    "installerIcon": "public/favicon.ico",
-    "uninstallerIcon": "public/favicon.ico",
-    "installerHeaderIcon": "public/favicon.ico",
-    "include": "build/installer.nsh"
+    "artifactName": "SARP-SAMP-Launcher-${version}.${ext}"
   }
 }

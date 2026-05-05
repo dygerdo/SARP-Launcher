@@ -39,5 +39,6 @@ const MODS: ModDescriptor[] = [
 
 export function detectGtaMods(): DetectedMod[] {
   const gameDir = getGameDir()
+  if (!gameDir) return []
   return MODS.filter((m) => m.detect(gameDir)).map(({ id, label }) => ({ id, label }))
 }

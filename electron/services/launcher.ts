@@ -84,14 +84,18 @@ export function launchGame(host: string, port: number): LaunchResult {
     return { ok: false, error: "already running" }
   }
 
-  const sampExe = join(getGameDir(), "samp.exe")
+  const gameDir = getGameDir()
+  if (!gameDir) {
+    return { ok: false, error: "Elige primero la carpeta de GTA: San Andreas" }
+  }
+  const sampExe = join(gameDir, "samp.exe")
   if (!existsSync(sampExe)) {
     return { ok: false, error: "samp.exe no está instalado" }
   }
 
   try {
     const child = spawn(sampExe, [`${host}:${port}`], {
-      cwd: getGameDir(),
+      cwd: gameDir,
       detached: true,
       stdio: "ignore",
     })

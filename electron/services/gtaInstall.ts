@@ -1,4 +1,4 @@
-import { app, net, shell } from "electron"
+import { app, net } from "electron"
 import { spawn } from "node:child_process"
 import { createHash, randomBytes } from "node:crypto"
 import { createReadStream, createWriteStream, existsSync, statSync } from "node:fs"
@@ -10,6 +10,7 @@ import yauzl from "yauzl"
 import type { Entry, ZipFile } from "yauzl"
 import { fetchManifest, getCachedManifest } from "./manifest"
 import type { LauncherManifest } from "./manifest"
+import { ensureGameFolderShortcut } from "./shortcuts"
 import store from "./store"
 
 const DOWNLOAD_TIMEOUT_MS = 600_000 // 10 min — 1 GB on a slow line
@@ -534,23 +535,6 @@ async function extractElevated(zipPath: string, targetDir: string): Promise<void
   }
 }
 
-async function createLauncherShortcut(targetDir: string): Promise<void> {
-  if (!app.isPackaged) return // dev mode: don't litter shortcuts
-  try {
-    const target = app.getPath("exe")
-    const shortcutPath = join(targetDir, "SARP Launcher.lnk")
-    shell.writeShortcutLink(shortcutPath, "create", {
-      target,
-      cwd: targetDir,
-      description: "San Andreas Roleplay Launcher",
-      icon: target,
-      iconIndex: 0,
-    })
-  } catch {
-    // best-effort: shortcut is a nice-to-have, not a blocker
-  }
-}
-
 export async function installGta(
   targetDir: string,
   onProgress: GtaInstallProgressCallback,
@@ -600,7 +584,7 @@ export async function installGta(
     }
 
     onProgress({ phase: "shortcut", percent: 100, message: "Creando acceso directo..." })
-    await createLauncherShortcut(targetDir)
+    await ensureGameFolderShortcut(targetDir)
 
     await clearTempDir()
 

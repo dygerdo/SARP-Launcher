@@ -67,6 +67,13 @@ async function verifyFile(gameDir: string, expected: ManifestFileEntry): Promise
 export async function verifySampFiles(manifest: LauncherManifest): Promise<SampVerificationResult> {
   try {
     const gameDir = getGameDir()
+    if (!gameDir) {
+      return {
+        ok: false,
+        files: [],
+        error: "Elige primero la carpeta de GTA: San Andreas.",
+      }
+    }
     const files: FileVerification[] = []
     for (const entry of manifest.samp.files) {
       files.push(await verifyFile(gameDir, entry))

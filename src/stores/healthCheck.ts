@@ -33,6 +33,10 @@ const INITIAL: HealthEntry[] = [
 
 function describeSamp(result: SampVerificationResult): string | undefined {
   if (result.error) {
+    // The backend short-circuits with a user-facing string when no game
+    // folder is set yet — surface it verbatim so the SAMP row mirrors the
+    // GTA row's "elige la carpeta" hint instead of suggesting a relaunch.
+    if (result.error.startsWith("Elige primero")) return result.error
     return "No se pudo verificar tu instalación de SA:MP. Vuelve a abrir el launcher para reintentar."
   }
   const failed = result.files.filter((f) => !f.ok)

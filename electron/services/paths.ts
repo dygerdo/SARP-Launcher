@@ -1,7 +1,8 @@
 import { app, dialog } from "electron"
 import { existsSync, statSync } from "node:fs"
 import { readdir } from "node:fs/promises"
-import { dirname, join } from "node:path"
+import { join } from "node:path"
+import { ensureGameFolderShortcut } from "./shortcuts"
 import store from "./store"
 
 // OS-generated metadata files we treat as if the folder were empty. Without
@@ -18,7 +19,7 @@ export async function isEffectivelyEmpty(path: string): Promise<boolean> {
   }
 }
 
-const DEV_FALLBACK = "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas"
+const TYPICAL_GTA_PATH = "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas"
 
 // Files and folders that must all exist for a path to count as a real GTA SA
 // install. vorbis*.dll are part of the original 1.0 release; SA-MP expects
@@ -33,11 +34,16 @@ export const REQUIRED_GTA_FILES = [
 
 export const REQUIRED_GTA_DIRS = ["anim", "audio", "data", "models"] as const
 
-function defaultGameDir(): string {
+// Sensible starting point for the dialog when the user has never picked a
+// folder. In dev we honour DEV_GTA_PATH so devs can point at their own copy
+// without polluting the store; in prod we suggest the typical Rockstar path
+// if it exists, otherwise the user's home folder.
+function suggestedDefaultPath(): string {
   if (!app.isPackaged) {
-    return process.env.DEV_GTA_PATH ?? DEV_FALLBACK
+    return process.env.DEV_GTA_PATH ?? TYPICAL_GTA_PATH
   }
-  return dirname(app.getPath("exe"))
+  if (existsSync(TYPICAL_GTA_PATH)) return TYPICAL_GTA_PATH
+  return app.getPath("home")
 }
 
 function isFile(path: string): boolean {
@@ -61,8 +67,8 @@ export interface MissingGtaItems {
   dirs: string[]
 }
 
-export function findMissingGtaItems(path: string): MissingGtaItems {
-  if (!existsSync(path)) {
+export function findMissingGtaItems(path: string | null): MissingGtaItems {
+  if (!path || !existsSync(path)) {
     return { files: [...REQUIRED_GTA_FILES], dirs: [...REQUIRED_GTA_DIRS] }
   }
   return {
@@ -76,16 +82,15 @@ function isValidGameDir(path: string): boolean {
   return missing.files.length === 0 && missing.dirs.length === 0
 }
 
-export function getGameDir(): string {
-  // Manual override wins over the launcher's own location, but only while the
-  // override still points at a valid install. If the user moves or deletes
-  // the folder we silently fall back instead of leaving the launcher pinned
-  // to a broken path.
+export function getGameDir(): string | null {
+  // The portable .exe lives wherever the user dropped it (Downloads, Desktop,
+  // a USB stick…), so we can't infer the GTA folder from our own location any
+  // more — we only trust an explicit, still-valid override the user picked.
   const override = store.get("gtaPath")
   if (override && isValidGameDir(override)) {
     return override
   }
-  return defaultGameDir()
+  return null
 }
 
 export interface PickGameDirResult {
@@ -99,7 +104,7 @@ export async function pickGameDir(): Promise<PickGameDirResult> {
   const result = await dialog.showOpenDialog({
     title: "Selecciona la carpeta de GTA: San Andreas",
     properties: ["openDirectory"],
-    defaultPath: store.get("gtaPath") ?? defaultGameDir(),
+    defaultPath: store.get("gtaPath") ?? suggestedDefaultPath(),
   })
 
   if (result.canceled || result.filePaths.length === 0) {
@@ -117,6 +122,7 @@ export async function pickGameDir(): Promise<PickGameDirResult> {
   }
 
   store.set("gtaPath", selected)
+  await ensureGameFolderShortcut(selected)
   return { ok: true, path: selected }
 }
 
@@ -124,7 +130,7 @@ export async function pickEmptyInstallDir(): Promise<PickGameDirResult> {
   const result = await dialog.showOpenDialog({
     title: "Selecciona una carpeta vacía donde instalar GTA: San Andreas",
     properties: ["openDirectory", "createDirectory"],
-    defaultPath: store.get("gtaPath") ?? defaultGameDir(),
+    defaultPath: store.get("gtaPath") ?? suggestedDefaultPath(),
   })
 
   if (result.canceled || result.filePaths.length === 0) {

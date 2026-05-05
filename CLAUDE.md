@@ -119,10 +119,11 @@ launcher/
 
 ### Distribución y ubicación del launcher
 
-- **El launcher se instala en la carpeta de GTA San Andreas**, junto a `gta_sa.exe`. El instalador NSIS pide al usuario seleccionar esa carpeta como destino (con guidance clara en la welcome page) y la default a `C:\Program Files (x86)\Rockstar Games\GTA San Andreas`.
-- **No existe onboarding de selección de ruta**. La ubicación de GTA SA es la propia ubicación del launcher: `path.dirname(app.getPath("exe"))` en producción.
-- **En dev** (`yarn dev`), la ruta se simula vía `DEV_GTA_PATH` en `.env`.
-- **Trade-off conocido**: si GTA SA está en `Program Files`, los auto-updates piden UAC (1 click amarillo cada release). Aceptado por simplicidad y porque coincide con el patrón mental de SAMP clásico.
+- **El launcher es un único `.exe` portable** (electron-builder `target: "portable"`). Se ejecuta desde donde el usuario lo deje (Descargas, Escritorio, USB…), sin instalación, sin entradas en registry ni Start Menu.
+- **La carpeta de GTA es un dato gestionado dentro de la app**, no algo que un wizard configura por adelantado. `getGameDir()` devuelve `string | null`: hasta que el usuario elige carpeta válida es `null` y los health checks reportan error con un botón _"Cambiar ubicación"_ visible.
+- **Flujo de primera apertura**: el usuario abre el `.exe` → health check muestra GTA en error → clic en _"Cambiar ubicación"_ → elige `C:\…\GTA San Andreas` → se guarda en `electron-store` y se crea `SARP Launcher.lnk` dentro de esa carpeta apuntando al `.exe` portable. El shortcut es idempotente: cambiar de carpeta repointea el `.lnk` en la nueva, no borra el de la anterior.
+- **Importante**: el shortcut apunta a `process.env.PORTABLE_EXECUTABLE_FILE` (la ruta real del `.exe` portable), no a `app.getPath("exe")` — en modo portable Electron extrae a un temp dir transitorio y esa ruta desaparece entre ejecuciones.
+- **En dev** (`yarn dev`), la ruta de GTA se simula vía `DEV_GTA_PATH` en `.env` y los shortcuts no se crean (`app.isPackaged` guard).
 
 ### Funcionalidades v1
 

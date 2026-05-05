@@ -92,7 +92,12 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle(IPC.SAMP_INSTALL_REQUIRES_ELEVATION, async (): Promise<boolean> => {
-    const writable = await canWriteToGameDir(getGameDir())
+    const gameDir = getGameDir()
+    // No folder yet → no idea whether elevation will be needed. Default to
+    // false; the actual install attempt will fail loudly with a useful error
+    // before any elevation prompt would appear.
+    if (!gameDir) return false
+    const writable = await canWriteToGameDir(gameDir)
     return !writable
   })
 

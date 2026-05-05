@@ -18,7 +18,7 @@ import type { GtaInstallProgress, GtaInstallResult } from "./services/gtaInstall
 import type { CacheInstallProgress, CacheInstallResult } from "./services/cacheInstall"
 
 const launcherApi = {
-  getGameDir: (): Promise<string> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
+  getGameDir: (): Promise<string | null> => ipcRenderer.invoke(IPC.GAME_DIR_GET),
 
   getStore: <K extends keyof LauncherStoreSchema>(key: K): Promise<LauncherStoreSchema[K]> =>
     ipcRenderer.invoke(IPC.STORE_GET, key),

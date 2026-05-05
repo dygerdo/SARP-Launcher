@@ -476,6 +476,9 @@ async function repairSampFiles(
   const staged = await downloadFilesToStaging(failedFiles, manifest, stagingDir, onProgress)
 
   const gameDir = getGameDir()
+  if (!gameDir) {
+    throw new Error("Elige primero la carpeta de GTA: San Andreas.")
+  }
   const writable = await canWriteToGameDir(gameDir)
   if (writable) {
     onProgress({ phase: "install", percent: 0, message: "Reparando archivos..." })
@@ -505,13 +508,22 @@ async function runFullInstall(
     installer.sha256,
     onProgress,
   )
-  await runSilentInstall(downloaded.filePath, installer.silentArgs, getGameDir(), onProgress)
+  const gameDir = getGameDir()
+  if (!gameDir) {
+    throw new Error("Elige primero la carpeta de GTA: San Andreas.")
+  }
+  await runSilentInstall(downloaded.filePath, installer.silentArgs, gameDir, onProgress)
   return { tempDir: downloaded.dirPath }
 }
 
 export async function installSamp(onProgress: InstallProgressCallback): Promise<InstallResult> {
   let tempDir: string | null = null
   try {
+    if (!getGameDir()) {
+      const message = "Elige primero la carpeta de GTA: San Andreas."
+      onProgress({ phase: "error", percent: 0, message })
+      return { ok: false, error: message }
+    }
     onProgress({ phase: "preflight", percent: 0, message: "Verificando estado del juego..." })
     await ensureGameNotRunning()
 
