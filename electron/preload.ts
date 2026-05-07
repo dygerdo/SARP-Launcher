@@ -6,6 +6,7 @@ import type {
   GameLaunchResult,
   GameStatus,
   HealthCheckPayload,
+  WindowState,
 } from "./ipc/channels"
 import type { LauncherStoreSchema } from "./services/store"
 import type { PingResult } from "./services/sampQuery"
@@ -92,6 +93,18 @@ const launcherApi = {
   minimize: (): void => ipcRenderer.send(IPC.WINDOW_MINIMIZE),
 
   close: (): void => ipcRenderer.send(IPC.WINDOW_CLOSE),
+
+  toggleMaximize: (): void => ipcRenderer.send(IPC.WINDOW_TOGGLE_MAXIMIZE),
+
+  toggleFullscreen: (): void => ipcRenderer.send(IPC.WINDOW_TOGGLE_FULLSCREEN),
+
+  getWindowState: (): Promise<WindowState> => ipcRenderer.invoke(IPC.WINDOW_STATE_GET),
+
+  onWindowStateChange: (callback: (state: WindowState) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, state: WindowState) => callback(state)
+    ipcRenderer.on(IPC.WINDOW_STATE_CHANGED, listener)
+    return () => ipcRenderer.off(IPC.WINDOW_STATE_CHANGED, listener)
+  },
 
   openExternal: (url: string): void => ipcRenderer.send(IPC.SHELL_OPEN_EXTERNAL, url),
 

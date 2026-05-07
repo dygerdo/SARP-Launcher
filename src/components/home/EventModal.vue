@@ -92,7 +92,7 @@ function openExternal() {
       <Transition :name="direction === 'right' ? 'slide-left' : 'slide-right'" mode="out-in">
         <div
           :key="event.id"
-          class="relative flex max-h-[calc(100vh-3rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
+          class="relative flex max-h-[calc(100vh-3rem)] w-full max-w-[min(90vw,28rem)] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_60px_rgba(0,0,0,0.6)]"
         >
           <button
             type="button"

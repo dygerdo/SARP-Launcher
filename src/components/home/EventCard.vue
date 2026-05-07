@@ -14,10 +14,10 @@ defineEmits<{
   <button
     type="button"
     class="group relative flex shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-white/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-    style="-webkit-app-region: no-drag; width: 110px"
+    style="-webkit-app-region: no-drag; height: clamp(150px, 21.6vh, 240px); aspect-ratio: 9 / 16"
     @click="$emit('open', event)"
   >
-    <div class="relative aspect-[9/16] w-full overflow-hidden bg-zinc-800">
+    <div class="relative h-full w-full overflow-hidden bg-zinc-800">
       <img
         v-if="event.image"
         :src="event.image"

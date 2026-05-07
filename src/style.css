@@ -17,6 +17,22 @@ body,
   cursor: default;
 }
 
+/* Block accidental horizontal scrolling at the window root. Long unbroken
+   strings (URLs, version IDs) inside flex children would otherwise push
+   the viewport sideways once the window gets narrow. */
+body {
+  overflow-x: hidden;
+}
+
+/* Lets `flex-1` children shrink past their content's intrinsic width. Without
+   this, long labels inside flex rows force the parent wider than the window
+   and break the responsive layout. */
+*,
+*::before,
+*::after {
+  min-width: 0;
+}
+
 img {
   -webkit-user-drag: none;
   user-select: none;

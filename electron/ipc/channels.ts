@@ -9,6 +9,10 @@ export const IPC = {
   CDN_GET: "cdn:get",
   WINDOW_MINIMIZE: "window:minimize",
   WINDOW_CLOSE: "window:close",
+  WINDOW_TOGGLE_MAXIMIZE: "window:toggle-maximize",
+  WINDOW_TOGGLE_FULLSCREEN: "window:toggle-fullscreen",
+  WINDOW_STATE_GET: "window:state:get",
+  WINDOW_STATE_CHANGED: "window:state:changed",
   SHELL_OPEN_EXTERNAL: "shell:open-external",
   SERVER_PING: "server:ping",
   MANIFEST_FETCH: "manifest:fetch",
@@ -54,6 +58,11 @@ export interface HealthCheckPayload {
     expectedFileCount?: number
     actualFileCount?: number
   }
+}
+
+export interface WindowState {
+  isMaximized: boolean
+  isFullscreen: boolean
 }
 
 export interface GameLaunchPayload {

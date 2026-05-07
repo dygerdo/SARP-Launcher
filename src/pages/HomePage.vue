@@ -2,7 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from "vue"
 import ShellLayout from "@/layouts/ShellLayout.vue"
 import HealthCheckList from "@/components/home/HealthCheckList.vue"
-import PlayButton from "@/components/home/PlayButton.vue"
+import PlayCard from "@/components/home/PlayCard.vue"
 import EventsCarousel from "@/components/home/EventsCarousel.vue"
 import EventModal from "@/components/home/EventModal.vue"
 import LogoMark from "@/components/brand/LogoMark.vue"
@@ -107,13 +107,13 @@ function showBlockHint() {
 <template>
   <ShellLayout :loading="!ready">
     <template #skeleton>
-      <div class="flex w-full max-w-xl flex-col items-center gap-6">
-        <header class="flex w-full items-center gap-5">
+      <div class="flex w-full max-w-2xl flex-col items-center gap-4 md:gap-6">
+        <header class="flex items-center gap-5">
           <LogoMark size="md" />
           <!-- Heights mirror the real header (h1 ~32 px, ServerStatus ~16 px,
                tagline slot 40 px) so the swap from skeleton to content is
                CLS-free. -->
-          <div class="flex min-w-0 flex-1 flex-col gap-1">
+          <div class="flex min-w-0 flex-col gap-1">
             <div class="skeleton-block h-7 w-4/5" />
             <div class="skeleton-block h-4 w-3/5" />
             <div class="skeleton-block h-10 w-11/12" />
@@ -156,10 +156,10 @@ function showBlockHint() {
       </div>
     </template>
 
-    <div class="flex w-full max-w-xl flex-col items-center gap-6">
+    <div class="flex w-full max-w-2xl flex-col items-center gap-4 md:gap-6">
       <header class="flex items-center gap-5">
         <LogoMark size="md" />
-        <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <div class="flex min-w-0 flex-col gap-1">
           <h1 class="text-2xl tracking-tight text-white">
             <span class="font-light text-white/85">Bienvenido a</span>
             <span
@@ -182,34 +182,20 @@ function showBlockHint() {
         </div>
       </header>
 
-      <HealthCheckList />
-
-      <EventsCarousel :events="events" :loading="eventsLoading" @open="openEvent" />
-
-      <div class="flex w-full flex-col items-center gap-2 pt-2">
-        <Transition name="hint">
-          <p v-if="blockHint" class="text-xs font-medium text-rose-300">{{ blockHint }}</p>
-        </Transition>
-        <PlayButton
+      <div class="grid w-full grid-cols-[1fr_auto] items-stretch gap-3">
+        <HealthCheckList />
+        <PlayCard
+          class="w-44"
           :phase="phase"
           :disabled="!health.allOk"
           :launch-message="launchMessage"
-          @click="play"
+          :block-hint="blockHint"
+          @play="play"
+          @signup="openSignup"
         />
-        <button
-          type="button"
-          class="group mt-1 inline-flex items-center gap-1.5 text-xs text-white/45 transition hover:text-white"
-          style="-webkit-app-region: no-drag"
-          @click="openSignup"
-        >
-          <span>¿Eres nuevo en Los Santos?</span>
-          <span
-            class="inline-flex items-center gap-1 font-medium text-amber-300/90 underline-offset-2 group-hover:underline"
-          >
-            Regístrate aquí 🚀
-          </span>
-        </button>
       </div>
+
+      <EventsCarousel :events="events" :loading="eventsLoading" @open="openEvent" />
     </div>
 
     <EventModal

@@ -25,7 +25,7 @@ const TAGLINES = [
   "Big Smoke habría pedido delivery en plena persecución.",
   "No es MG si lo pensaste muy fuerte.",
   "Tu taxi parece vehículo recuperado del fondo del mar.",
-  "Las grúas trabajan más que el SAPD.",
+  "Las grúas trabajan más que el LSPD.",
   "Ese DM fue tan descarado que Tempenny sonrió.",
   "Hoy habrá más disparos que FPS.",
   "El único rol serio en Grove Street es el de los perros.",
@@ -61,6 +61,7 @@ const TAGLINES = [
   "Sttam es el único que puede usar un tanque sin ser reportado.",
   "Pigeon es más friki que Zero, y eso es decir mucho.",
   "Tiburcio Tenedor es el único crack que puede conducir una Monster.",
+  "LSSD por fin encontró rol con las pandillas, pero prefirió irse a una persecución sin sentido.",
 ] as const
 
 // Bag shuffle: we hand out every tagline once before any repeats. This is

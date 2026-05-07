@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { useWindowState } from "@/composables/useWindowState"
+
+const { isMaximized, toggleMaximize } = useWindowState()
+
 function onMinimize() {
   window.launcher.minimize()
 }
@@ -6,12 +10,21 @@ function onMinimize() {
 function onClose() {
   window.launcher.close()
 }
+
+// Double-click on the drag region toggles maximise — Windows-native UX.
+// The button itself sits in a no-drag region so a single click on it is not
+// hijacked by a pending second click.
+function onDragDoubleClick(event: MouseEvent) {
+  if (event.detail !== 2) return
+  toggleMaximize()
+}
 </script>
 
 <template>
   <header
     class="relative z-20 flex h-8 items-center justify-between border-b border-white/5 bg-zinc-950/80 pl-3 text-white/80"
     style="-webkit-app-region: drag"
+    @click="onDragDoubleClick"
   >
     <div class="flex items-center gap-2">
       <img src="/logo-squared.png" alt="SARP" class="h-4 w-4 select-none" draggable="false" />
@@ -31,6 +44,47 @@ function onClose() {
           <rect x="0" y="4.5" width="10" height="1" fill="currentColor" />
         </svg>
       </button>
+
+      <button
+        type="button"
+        :aria-label="isMaximized ? 'Restaurar' : 'Maximizar'"
+        :title="isMaximized ? 'Restaurar' : 'Maximizar'"
+        class="flex h-full w-11 items-center justify-center text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        @click="toggleMaximize"
+      >
+        <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect
+            x="0.5"
+            y="0.5"
+            width="9"
+            height="9"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
+        </svg>
+        <svg v-else width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">
+          <rect
+            x="2.5"
+            y="0.5"
+            width="7"
+            height="7"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="none"
+          />
+          <rect
+            x="0.5"
+            y="2.5"
+            width="7"
+            height="7"
+            stroke="currentColor"
+            stroke-width="1"
+            fill="#09090b"
+          />
+        </svg>
+      </button>
+
       <button
         type="button"
         aria-label="Cerrar"

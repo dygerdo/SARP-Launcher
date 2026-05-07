@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, shell } from "electron"
 import { IPC } from "./channels"
-import type { GameLaunchPayload, HealthCheckPayload } from "./channels"
+import type { GameLaunchPayload, HealthCheckPayload, WindowState } from "./channels"
 import store from "../services/store"
 import type { LauncherStoreSchema } from "../services/store"
 import { getGameDir, pickGameDir, pickEmptyInstallDir } from "../services/paths"
@@ -151,6 +151,34 @@ export function registerIpcHandlers() {
 
   ipcMain.on(IPC.WINDOW_CLOSE, (event) => {
     BrowserWindow.fromWebContents(event.sender)?.close()
+  })
+
+  ipcMain.on(IPC.WINDOW_TOGGLE_MAXIMIZE, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    // Fullscreen takes priority — if the user double-clicks the titlebar
+    // while in fullscreen we want to leave fullscreen, not toggle maximise
+    // underneath it.
+    if (win.isFullScreen()) {
+      win.setFullScreen(false)
+      return
+    }
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
+  })
+
+  ipcMain.on(IPC.WINDOW_TOGGLE_FULLSCREEN, (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    win.setFullScreen(!win.isFullScreen())
+  })
+
+  ipcMain.handle(IPC.WINDOW_STATE_GET, (event): WindowState => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return {
+      isMaximized: win?.isMaximized() ?? false,
+      isFullscreen: win?.isFullScreen() ?? false,
+    }
   })
 
   ipcMain.on(IPC.SHELL_OPEN_EXTERNAL, (_event, url: unknown) => {

@@ -3,9 +3,16 @@ import { fileURLToPath } from "node:url"
 import path from "node:path"
 import log from "electron-log"
 import { registerIpcHandlers } from "./ipc/handlers"
+import { IPC } from "./ipc/channels"
 import { detectRunningGame } from "./services/launcher"
 import { sweepLauncherTemp } from "./services/tempSweep"
 import { initUpdater } from "./services/updater"
+import {
+  attachWindowStatePersistence,
+  loadInitialBounds,
+  MIN_HEIGHT,
+  MIN_WIDTH,
+} from "./services/windowState"
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -28,16 +35,25 @@ if (app.isPackaged) {
 let win: BrowserWindow | null = null
 
 function createWindow() {
+  const bounds = loadInitialBounds()
+
   win = new BrowserWindow({
     title: "San Andreas Roleplay - SA:MP Launcher",
     icon: ICON_PATH,
-    width: 960,
-    height: 860,
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
+    minWidth: MIN_WIDTH,
+    minHeight: MIN_HEIGHT,
     frame: false,
-    resizable: false,
-    maximizable: false,
-    fullscreenable: false,
+    resizable: true,
+    maximizable: true,
+    fullscreenable: true,
+    useContentSize: true,
     autoHideMenuBar: true,
+    show: false,
+    backgroundColor: "#09090b",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -48,6 +64,30 @@ function createWindow() {
       devTools: !app.isPackaged,
     },
   })
+
+  if (bounds.isMaximized) win.maximize()
+  if (bounds.isFullscreen) win.setFullScreen(true)
+
+  // Defer first paint until the renderer is ready so users don't see a flash
+  // of white between window-create and first frame.
+  win.once("ready-to-show", () => win?.show())
+
+  attachWindowStatePersistence(win)
+
+  // Push window-state changes to the renderer so the title bar can reflect
+  // maximise/restore/fullscreen icons and conditionally hide itself in
+  // fullscreen.
+  const sendState = () => {
+    if (!win || win.isDestroyed()) return
+    win.webContents.send(IPC.WINDOW_STATE_CHANGED, {
+      isMaximized: win.isMaximized(),
+      isFullscreen: win.isFullScreen(),
+    })
+  }
+  win.on("maximize", sendState)
+  win.on("unmaximize", sendState)
+  win.on("enter-full-screen", sendState)
+  win.on("leave-full-screen", sendState)
 
   // Suppress the default right-click → "Inspect element" entry. With devTools
   // disabled the entry is inert anyway, but hiding the menu avoids surfacing

@@ -36,7 +36,7 @@ const buttonClasses = computed(() => {
 <template>
   <button
     type="button"
-    class="play-button group relative flex w-full max-w-xs items-center justify-center gap-3 overflow-hidden rounded-2xl px-8 py-4 text-base uppercase tracking-wider transition-all"
+    class="play-button group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl px-4 py-3 text-sm uppercase tracking-wider transition-all"
     :class="buttonClasses"
     style="-webkit-app-region: no-drag"
     :disabled="phase !== 'idle' && disabled"
