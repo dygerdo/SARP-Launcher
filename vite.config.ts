@@ -2,11 +2,28 @@ import { defineConfig, loadEnv } from "vite"
 import vue from "@vitejs/plugin-vue"
 import electron from "vite-plugin-electron/simple"
 import renderer from "vite-plugin-electron-renderer"
+import { execSync } from "node:child_process"
 import { resolve } from "node:path"
+
+// Resolve the short git commit hash at build time so the renderer footer can
+// show e.g. "v1.0.0 (a3f2b1c)". Falls back to "unknown" outside a git checkout
+// (CI without history, sources extracted from a tarball, etc.) so the build
+// never breaks because of this.
+function resolveGitCommit(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+      .toString()
+      .trim()
+  } catch {
+    return "unknown"
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "")
   if (env.DEV_GTA_PATH) process.env.DEV_GTA_PATH = env.DEV_GTA_PATH
+
+  const gitCommit = resolveGitCommit()
 
   // Vite only inlines `VITE_*` env vars into the renderer bundle. The Electron
   // main process is plain Node, so `process.env.VITE_FOO` is undefined at
@@ -22,6 +39,9 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": resolve(__dirname, "src"),
       },
+    },
+    define: {
+      __GIT_COMMIT__: JSON.stringify(gitCommit),
     },
     plugins: [
       vue(),

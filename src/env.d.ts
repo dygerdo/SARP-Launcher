@@ -24,4 +24,8 @@ declare global {
   interface Window {
     launcher: LauncherApi
   }
+  /** Short git commit hash baked into the bundle by Vite at build time.
+   *  Surfaced in the footer ("v1.0.0 (a3f2b1c)") so support can identify
+   *  which build a user is running. */
+  const __GIT_COMMIT__: string
 }

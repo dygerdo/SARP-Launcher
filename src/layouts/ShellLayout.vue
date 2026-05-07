@@ -17,7 +17,7 @@ withDefaults(
 // Version is read from app.getVersion() so package.json is the single source
 // of truth — no hardcoded "v1.0.0" to forget on each release bump.
 const version = ref<string>("")
-const buildId = "dev"
+const buildId = __GIT_COMMIT__
 const currentYear = new Date().getFullYear()
 
 const { isFullscreen, toggleFullscreen } = useWindowState()
