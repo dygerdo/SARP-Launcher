@@ -72,10 +72,7 @@ function openSite() {
     </main>
 
     <div class="relative z-10 flex-shrink-0">
-      <div
-        v-if="!isFullscreen"
-        class="absolute bottom-full right-5 hidden md:block"
-      >
+      <div v-if="!isFullscreen" class="absolute bottom-full right-5 hidden md:block">
         <GraffitiSpot />
       </div>
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, useTemplateRef } from "vue"
+import { onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue"
 import spray1Url from "@/assets/tag/spray_1.aac?url"
 import spray2Url from "@/assets/tag/spray_2.aac?url"
 import graffiti1Url from "@/assets/tag/graffiti_1.png"
@@ -24,6 +24,12 @@ spray1.volume = 0.6
 const spray2 = new Audio(spray2Url)
 spray2.volume = 0.8
 
+// `mouseDown` tracks the physical button state regardless of where the cursor
+// is — so when the user drags out of the spot and back in without releasing,
+// we can resume spraying instead of forcing them to click again. `pressing`
+// tracks whether we are *actively painting right now* (cursor inside + button
+// down). Two flags, two questions.
+let mouseDown = false
 let pressing = false
 let lastPaintAt = 0
 let frameCounter = 0
@@ -56,7 +62,12 @@ function checkCoverage() {
   if (painted / total >= COVERAGE_TARGET) finish()
 }
 
-function startSpray() {
+function onMouseDown() {
+  mouseDown = true
+  beginSpray()
+}
+
+function beginSpray() {
   if (sprayed.value || pressing) return
   pressing = true
   spray1.currentTime = 0
@@ -65,14 +76,20 @@ function startSpray() {
   lastPaintAt = performance.now()
 }
 
-function stopSpray() {
+function pauseSpray() {
   if (!pressing) return
   pressing = false
   spray1.pause()
 }
 
+function onGlobalMouseUp() {
+  mouseDown = false
+  pauseSpray()
+}
+
 function finish() {
-  stopSpray()
+  mouseDown = false
+  pauseSpray()
   sprayed.value = true
   void spray2.play().catch(() => {})
 }
@@ -98,15 +115,27 @@ function onMouseMove(e: MouseEvent) {
 
 function onEnter() {
   hovering.value = true
+  // If the user is dragging back in with the button still held, resume the
+  // spray automatically instead of forcing them to click again.
+  if (mouseDown && !sprayed.value) beginSpray()
 }
 
 function onLeave() {
   hovering.value = false
-  stopSpray()
+  // Pause painting+sound while outside, but keep `mouseDown` truthful so we
+  // can resume on re-entry. The global mouseup listener will clear it if the
+  // user actually releases the button outside the spot.
+  pauseSpray()
 }
 
+onMounted(() => {
+  window.addEventListener("mouseup", onGlobalMouseUp)
+})
+
 onBeforeUnmount(() => {
-  stopSpray()
+  window.removeEventListener("mouseup", onGlobalMouseUp)
+  mouseDown = false
+  pauseSpray()
   spray1.src = ""
   spray2.src = ""
 })
@@ -119,8 +148,7 @@ onBeforeUnmount(() => {
     @mouseenter="onEnter"
     @mouseleave="onLeave"
     @mousemove="onMouseMove"
-    @mousedown="startSpray"
-    @mouseup="stopSpray"
+    @mousedown="onMouseDown"
   >
     <img
       :src="graffiti1Url"
