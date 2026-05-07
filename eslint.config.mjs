@@ -43,7 +43,12 @@ export default [
       parser: tsParser,
       ecmaVersion: "latest",
       sourceType: "module",
-      globals: { ...globals.browser, ...globals.node, ...globals.es2022 },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.es2022,
+        __GIT_COMMIT__: "readonly",
+      },
     },
     plugins: { "@typescript-eslint": tsPlugin },
     rules: {
@@ -70,7 +75,11 @@ export default [
         sourceType: "module",
         extraFileExtensions: [".vue"],
       },
-      globals: { ...globals.browser, ...globals.es2022 },
+      globals: {
+        ...globals.browser,
+        ...globals.es2022,
+        __GIT_COMMIT__: "readonly",
+      },
     },
     plugins: { vue: vuePlugin, "@typescript-eslint": tsPlugin },
     rules: {
