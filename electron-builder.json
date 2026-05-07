@@ -26,7 +26,6 @@
       }
     ],
     "icon": "public/favicon.ico",
-    "publisherName": "San Andreas Roleplay",
     "artifactName": "SARP-SAMP-Launcher-Setup-${version}.${ext}"
   },
   "nsis": {
