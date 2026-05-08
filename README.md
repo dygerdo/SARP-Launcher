@@ -1,14 +1,27 @@
-# San-Andreas-Roleplay_Launcher
+<div align="center">
+  <a href="https://sarp.es/" target="_blank">
+    <img style="width: 200px;" src="https://i.imgur.com/EFK15nk.png" alt="San Andreas Roleplay"/>
+  </a>
+</div>
 
-Launcher oficial de San Andreas Roleplay (SA:MP).
+![Discord Shield](https://discord.com/api/guilds/1118327104908570654/widget.png?style=shield)
+[![License: MIT](https://img.shields.io/badge/License-MIT%20License-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Desarrollo
+Launcher oficial del servidor SAMP de [San Andreas Roleplay](https://sarp.es). Verifica la instalación de GTA SA, descarga `samp.exe` y los archivos de cache desde el CDN, y lanza el juego en el servidor oficial.
+
+## Para jugadores
+
+Descargá la última versión desde [Releases](https://github.com/San-Andreas-Roleplay-ES/San-Andreas-Roleplay_Launcher/releases/latest). A partir de la primera instalación, el launcher se actualiza solo cuando hay una nueva versión disponible.
+
+## Para desarrolladores
 
 ```bash
 yarn install
 yarn dev      # Vite + Electron en modo dev
 yarn polish   # format + lint + typecheck
 ```
+
+Documentación técnica completa (stack, estructura, convenciones, decisiones de producto) en [CLAUDE.md](CLAUDE.md).
 
 ## Release
 
@@ -44,18 +57,10 @@ Las actualizaciones se distribuyen vía `electron-updater` con `provider: generi
 
 5. **Probar el update** desde una versión anterior instalada: abrir el launcher con la `<version-1>` instalada, esperar unos segundos, debería aparecer el banner _"Descargando actualización"_ → _"Reiniciar para aplicar"_. Logs en `%APPDATA%\san-andreas-roleplay-launcher\logs\main.log`.
 
-### Primera publicación (1.0.0)
-
-Para la 1.0.0 no hay versión anterior contra la cual probar el update. Verificar solo:
-
-- Instalación silenciosa en VM limpia (Windows 10/11).
-- No pide UAC.
-- Instala en `%LOCALAPPDATA%\Programs\San Andreas Roleplay - SA-MP Launcher\`.
-- Aparece en Start Menu y _Aplicaciones y características_.
-- Health check abre el flujo de selección de carpeta de GTA.
-
-A partir de la 1.0.1 ya se puede probar el update end-to-end.
-
 ### Code signing
 
 El `.exe` no está firmado. Los usuarios verán el SmartScreen _"Windows protected your PC"_ → _"More info"_ → _"Run anyway"_ la primera vez. En updates posteriores aplicados por NSIS no se vuelve a mostrar.
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).

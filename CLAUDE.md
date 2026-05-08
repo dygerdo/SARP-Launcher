@@ -4,16 +4,6 @@ Launcher oficial del servidor SAMP de San Andreas Roleplay. App de escritorio Wi
 
 ---
 
-## Documentación
-
-Los planes y diseños detallados viven en [docs/](docs/). Antes de implementar una feature compleja, consultá si hay un doc de referencia en esa carpeta.
-
-- [docs/README.md](docs/README.md) — índice de documentación.
-- [docs/manifest.md](docs/manifest.md) — estructura del CDN + endpoint del manifest.
-- [docs/loading-screen.md](docs/loading-screen.md) — plan del loading screen.
-
----
-
 ## Skills del proyecto
 
 Este repo incluye una colección de skills locales en [.agents/skills/](.agents/skills/) — guías de referencia (cada una con su propio `SKILL.md`) que Claude **debe consultar al iniciar tareas relacionadas** antes de generar código:
