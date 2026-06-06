@@ -4,7 +4,7 @@ function openStore() {
 }
 
 function openModSubmit() {
-  window.launcher.openExternal("https://www.sarp.es")
+  window.launcher.openExternal("https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/")
 }
 </script>
 
