@@ -45,6 +45,7 @@ const currentPage = ref(1)
 // Estado de carga sincronizado con el estilo de Inicio
 const ready = ref(false)
 const MIN_LOADING_TIME_MS = 1500
+const pageLoadStart = performance.now()
 
 const totalPages = computed(() => Math.ceil(store.filteredMods.length / ITEMS_PER_PAGE))
 const paginatedMods = computed(() => {
@@ -62,7 +63,6 @@ onMounted(async () => {
   if (store.ready) {
     ready.value = true
     await store.loadState()
-    console.warn("ModsPage: isGtaInstalled =", isGtaInstalled.value)
     return
   }
 
@@ -71,9 +71,14 @@ onMounted(async () => {
   }, MIN_LOADING_TIME_MS)
 
   await store.loadState()
-  console.warn("ModsPage: isGtaInstalled =", isGtaInstalled.value)
 
-  if (Date.now() >= performance.now() + MIN_LOADING_TIME_MS) {
+  const elapsed = performance.now() - pageLoadStart
+  const remaining = Math.max(0, MIN_LOADING_TIME_MS - elapsed)
+  if (remaining > 0) {
+    window.setTimeout(() => {
+      ready.value = true
+    }, remaining)
+  } else {
     ready.value = true
   }
 
@@ -131,7 +136,7 @@ const confirmUninstall = (mod: ModDefinition) => {
       </div>
     </template>
 
-    <div v-if="false" class="flex h-[70vh] w-full items-center justify-center">
+    <div v-if="!isGtaInstalled" class="flex h-[70vh] w-full items-center justify-center">
       <div class="flex max-w-md flex-col items-center gap-6 text-center">
         <div class="flex h-20 w-20 items-center justify-center rounded-full bg-orange-500/10">
           <i class="pi pi-exclamation-triangle text-4xl text-orange-500" />
@@ -153,7 +158,7 @@ const confirmUninstall = (mod: ModDefinition) => {
       </div>
     </div>
 
-    <div class="flex h-[75vh] w-full flex-col overflow-hidden">
+    <div v-if="isGtaInstalled" class="flex h-[75vh] w-full flex-col overflow-hidden">
       <div class="flex-1 overflow-y-auto overflow-x-hidden pr-2 custom-scroll">
         <div class="flex flex-col gap-8 pb-10">
           <!-- ESENCIALES -->
