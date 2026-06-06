@@ -1,5 +1,5 @@
 import { defineStore } from "pinia"
-import { ref, computed, onMounted, onUnmounted, watch } from "vue"
+import { ref, computed, watch } from "vue"
 import { useHealthCheckStore } from "@/stores/healthCheck"
 import type {
   ModDefinition,
@@ -22,6 +22,14 @@ export interface ToastItem {
 }
 
 let _toastId = 0
+
+/**
+ * Safely serialize a complex object to avoid circular references.
+ * Used for electron-store persistence which requires plain JSON.
+ */
+function serializeForStore<T>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj))
+}
 
 export const useModsStore = defineStore("mods", () => {
   const installedMods = ref<Record<string, InstalledModInfo>>({})
@@ -73,75 +81,86 @@ export const useModsStore = defineStore("mods", () => {
       await verifyFiles()
     } catch (e) {
       console.error("Error loading mods state:", e)
+      // On critical error, clear installed mods to prevent stale data from old GTA folder
+      installedMods.value = {}
+      essentials.value = { cleo: "missing", modloader: "missing", asiloader: "missing" }
     } finally {
       ready.value = true
     }
   }
 
   async function verifyFiles(): Promise<void> {
-    const catalogStatus = await window.launcher.mods.scanCatalog()
+    try {
+      const catalogStatus = await window.launcher.mods.scanCatalog()
 
-    for (const mod of MOD_CATALOG) {
-      const fileStatus = catalogStatus[mod.id] || {}
-      const results = Object.values(fileStatus)
+      for (const mod of MOD_CATALOG) {
+        const fileStatus = catalogStatus[mod.id] || {}
+        const results = Object.values(fileStatus)
 
-      // Skip empty results (unverifiable)
-      if (results.length === 0) continue
+        // Skip empty results (unverifiable)
+        if (results.length === 0) continue
 
-      const allExist = results.every((exists) => exists)
-      const noneExist = results.every((exists) => !exists)
+        const allExist = results.every((exists) => exists)
+        const noneExist = results.every((exists) => !exists)
 
-      if (allExist) {
-        if (!installedMods.value[mod.id]) {
-          installedMods.value[mod.id] = {
-            installedAt: new Date().toISOString(),
-            files: mod.files,
-            version: mod.version,
-            status: "ok",
+        if (allExist) {
+          if (!installedMods.value[mod.id]) {
+            installedMods.value[mod.id] = {
+              installedAt: new Date().toISOString(),
+              files: mod.files,
+              version: mod.version,
+              status: "ok",
+            }
+          } else {
+            installedMods.value[mod.id].status = "ok"
+            delete installedMods.value[mod.id].missingFiles
           }
+        } else if (noneExist) {
+          // No hay rastro del mod, lo quitamos del store si estaba
+          delete installedMods.value[mod.id]
         } else {
-          installedMods.value[mod.id].status = "ok"
-          delete installedMods.value[mod.id].missingFiles
-        }
-      } else if (noneExist) {
-        // No hay rastro del mod, lo quitamos del store si estaba
-        delete installedMods.value[mod.id]
-      } else {
-        const missingFiles = Object.entries(fileStatus)
-          .filter(([, exists]) => !exists)
-          .map(([filename]) => filename)
+          const missingFiles = Object.entries(fileStatus)
+            .filter(([, exists]) => !exists)
+            .map(([filename]) => filename)
 
-        // Instalación parcial -> Reparar
-        if (installedMods.value[mod.id]) {
-          installedMods.value[mod.id].status = "reparar"
-          installedMods.value[mod.id].missingFiles = missingFiles
-        } else {
-          // Si no estaba en el store pero hay archivos sueltos, lo añadimos como parcial
-          installedMods.value[mod.id] = {
-            installedAt: new Date().toISOString(),
-            files: mod.files,
-            version: mod.version,
-            status: "reparar",
-            missingFiles,
+          // Instalación parcial -> Reparar
+          if (installedMods.value[mod.id]) {
+            installedMods.value[mod.id].status = "reparar"
+            installedMods.value[mod.id].missingFiles = missingFiles
+          } else {
+            // Si no estaba en el store pero hay archivos sueltos, lo añadimos como parcial
+            installedMods.value[mod.id] = {
+              installedAt: new Date().toISOString(),
+              files: mod.files,
+              version: mod.version,
+              status: "reparar",
+              missingFiles,
+            }
           }
         }
       }
+      // Update store with current state
+      await window.launcher.setStore("installedMods", serializeForStore(installedMods.value))
+    } catch (err) {
+      console.error("Error verifying mod files:", err)
+      // On scan error, keep current state but log the problem
+      throw new Error("No se pudieron verificar los archivos de los mods", { cause: err })
     }
-    // Update store with current state
-    await window.launcher.setStore("installedMods", JSON.parse(JSON.stringify(installedMods.value)))
   }
 
   function pushToast(text: string, type: ToastType): void {
-    // Max 2 messages: drop the oldest if needed
-    if (toastItems.value.length >= 2) {
+    // Max 3 messages: drop the oldest if needed to allow brief burst visibility
+    if (toastItems.value.length >= 3) {
       toastItems.value.shift()
     }
     const id = ++_toastId
     toastItems.value.push({ id, text, type })
+    // Extended timeout for errors so they don't disappear too quickly
+    const timeout = type === "error" ? 2200 : 1800
     window.setTimeout(() => {
       const idx = toastItems.value.findIndex((t) => t.id === id)
       if (idx !== -1) toastItems.value.splice(idx, 1)
-    }, 1800)
+    }, timeout)
   }
 
   function mapModError(error: unknown, modName?: string): string {
@@ -175,7 +194,14 @@ export const useModsStore = defineStore("mods", () => {
   }
 
   async function installMod(mod: ModDefinition): Promise<void> {
+    // Double-check to prevent race condition: must be checked again inside
+    // the function before we commit to the install. This prevents two rapid
+    // clicks from both passing canInstall and both initiating downloads.
     if (!canInstall(mod)) return
+
+    // Acquire lock immediately: mark as installing before any async operation
+    if (installing.value[mod.id] || uninstalling.value.has(mod.id)) return
+
     errors.value[mod.id] = ""
     const wasPartial = isPartial(mod.id)
     // Pre-initialize progress so the spinner appears immediately (before first IPC event)
@@ -183,7 +209,15 @@ export const useModsStore = defineStore("mods", () => {
     installStatus.value[mod.id] = "downloading"
     try {
       await window.launcher.mods.install(mod)
-      await loadState()
+      // Mark as installed in our state
+      installedMods.value[mod.id] = {
+        installedAt: new Date().toISOString(),
+        files: mod.files,
+        version: mod.version,
+        status: "ok",
+      }
+      // Persist to electron-store immediately
+      await window.launcher.setStore("installedMods", serializeForStore(installedMods.value))
       // Toast after state is refreshed
       pushToast(
         wasPartial ? `${mod.name} reparado` : `${mod.name} instalado`,
@@ -233,10 +267,7 @@ export const useModsStore = defineStore("mods", () => {
       if (result.success) {
         delete installedMods.value[mod.id]
         errors.value[mod.id] = ""
-        await window.launcher.setStore(
-          "installedMods",
-          JSON.parse(JSON.stringify(installedMods.value)),
-        )
+        await window.launcher.setStore("installedMods", serializeForStore(installedMods.value))
         pushToast(`${mod.name} desinstalado`, "uninstall")
         return true
       } else {
@@ -268,10 +299,19 @@ export const useModsStore = defineStore("mods", () => {
 
   function canInstall(mod: ModDefinition): boolean {
     const coreIds = ["cleo", "modloader", "asiloader"]
-    if (coreIds.includes(mod.id)) return true
 
+    // Prevent concurrent operations on any mod
     if (installing.value[mod.id] || uninstalling.value.has(mod.id)) {
       return false
+    }
+
+    // For essential mods, allow install only if not already installed (status !== "ok")
+    // or if it's in repair state (partial install)
+    if (coreIds.includes(mod.id)) {
+      const isOk = essentials.value[mod.id as EssentialId] === "ok"
+      const isPartiallyInstalled = isPartial(mod.id)
+      // Allow re-repair if broken, but don't allow fresh install if already ok
+      return !isOk || isPartiallyInstalled
     }
 
     const essentialsOk = mod.requiresEssentials.every((id) => essentials.value[id] === "ok")
@@ -303,6 +343,21 @@ export const useModsStore = defineStore("mods", () => {
 
   function getDependentMods(modId: string): ModDefinition[] {
     return MOD_CATALOG.filter((m) => m.dependsOn?.includes(modId) && isInstalled(m.id))
+  }
+
+  /**
+   * Reinitialize mods state when GTA folder changes.
+   * Called by healthCheck after pickGameDir succeeds to ensure
+   * we don't carry stale data from the previous GTA installation.
+   */
+  async function resetOnGameDirChange(): Promise<void> {
+    installedMods.value = {}
+    essentials.value = { cleo: "missing", modloader: "missing", asiloader: "missing" }
+    errors.value = {}
+    installing.value = {}
+    installStatus.value = {}
+    // Reload with the new game directory
+    await loadState()
   }
 
   const incompleteMods = computed(() => {
@@ -374,9 +429,15 @@ export const useModsStore = defineStore("mods", () => {
 
   let stopProgress: (() => void) | null = null
 
-  onMounted(() => {
+  // Setup IPC listeners and health check watcher immediately (not on component mount)
+  // so that progress events are received even if no component has mounted yet.
+  function setupListeners(): void {
+    if (stopProgress) return // Already setup
     stopProgress = window.launcher.mods.onInstallProgress(handleProgress)
+
     const healthStore = useHealthCheckStore()
+    // Watch health check completion and refresh mods when it finishes
+    // (this watch will clean up when the store is destroyed)
     watch(
       () => healthStore.running,
       (isRunning, wasRunning) => {
@@ -386,11 +447,31 @@ export const useModsStore = defineStore("mods", () => {
         }
       },
     )
-  })
+  }
 
-  onUnmounted(() => {
-    if (stopProgress) stopProgress()
-  })
+  function cleanup(): void {
+    if (stopProgress) {
+      stopProgress()
+      stopProgress = null
+    }
+  }
+
+  // Initialize listeners when store is first used (lazy initialization)
+  let listenersSetup = false
+
+  // Helper to ensure listeners are setup before any operation that needs them
+  function ensureListeners(): void {
+    if (!listenersSetup) {
+      listenersSetup = true
+      setupListeners()
+    }
+  }
+
+  // Also initialize state from disk on first access
+  // This is called by components or when needed
+  setupListeners()
+  void loadState()
+
 
   return {
     installedMods,
@@ -422,5 +503,8 @@ export const useModsStore = defineStore("mods", () => {
     asiloaderMissing,
     scanDeps,
     openDepUrl,
+    resetOnGameDirChange,
+    cleanup,
+    ensureListeners,
   }
 })

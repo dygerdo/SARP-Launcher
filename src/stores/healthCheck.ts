@@ -358,6 +358,9 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
   async function pickGameDir(): Promise<{ ok: boolean; cancelled?: boolean; error?: string }> {
     const result = await window.launcher.pickGameDir()
     if (result.ok) {
+      // Reset mods state BEFORE running health checks on the new folder
+      await modsStore.resetOnGameDirChange()
+      // Then run health checks for the new location
       await run()
       return { ok: true }
     }
