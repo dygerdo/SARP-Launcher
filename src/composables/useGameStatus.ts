@@ -45,7 +45,7 @@ export function useGameStatus() {
   }
 
   async function launch(host: string, port: number) {
-    if (phase.value !== "idle") return
+    if (phase.value !== "idle") return { ok: false, error: "Already launching" }
     phase.value = "launching"
     scheduleLaunchMessages()
 
@@ -54,6 +54,7 @@ export function useGameStatus() {
       phase.value = "idle"
       clearTimers()
     }
+    return result
   }
 
   onMounted(async () => {

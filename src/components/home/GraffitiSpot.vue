@@ -153,6 +153,8 @@ onBeforeUnmount(() => {
     <img
       :src="graffiti1Url"
       alt=""
+      loading="eager"
+      decoding="async"
       class="pointer-events-none absolute inset-0 h-full w-full object-contain"
       draggable="false"
     />
@@ -167,6 +169,8 @@ onBeforeUnmount(() => {
       v-if="sprayed"
       :src="graffiti2Url"
       alt=""
+      loading="lazy"
+      decoding="async"
       class="graffiti-2 pointer-events-none absolute inset-0 h-full w-full object-contain"
       draggable="false"
     />

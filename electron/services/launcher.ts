@@ -1,12 +1,30 @@
-import { spawn, exec } from "node:child_process"
+import { spawn, exec, execSync } from "node:child_process"
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import { promisify } from "node:util"
 import { BrowserWindow } from "electron"
+import log from "electron-log"
 import { IPC, type GameStatus } from "../ipc/channels"
 import { getGameDir } from "./paths"
+import { runAnticheatCheck, checkRunningProcesses } from "./anticheat"
+import { setPlayingActivity, setLauncherActivity } from "./discord"
+import store from "./store"
 
 const execAsync = promisify(exec)
+
+function updateWindowVisibility(isGameRunning: boolean) {
+  const minimizeToTray = store.get("minimizeToTray")
+  if (!minimizeToTray) return
+
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (isGameRunning) {
+      win.hide()
+    } else {
+      win.show()
+      win.focus()
+    }
+  }
+}
 
 const TARGET_PROCESS = "gta_sa.exe"
 const POLL_INTERVAL_MS = 2500
@@ -48,6 +66,12 @@ function clearWatchdog() {
 function setActivePid(pid: number | null) {
   if (activePid === pid) return
   activePid = pid
+
+  updateWindowVisibility(pid !== null)
+
+  if (pid === null) {
+    setLauncherActivity()
+  }
   broadcastStatus()
 }
 
@@ -65,6 +89,27 @@ export async function findGameProcess(): Promise<number | null> {
 function startPolling() {
   stopPoll()
   pollInterval = setInterval(async () => {
+    // --- RUNTIME SECURITY CHECK ---
+    const bannedProc = checkRunningProcesses()
+    if (bannedProc) {
+      log.warn(`Security violation detected while playing: ${bannedProc}. Killing game.`)
+
+      const appWin = BrowserWindow.getAllWindows()[0]
+      if (appWin) {
+        appWin.webContents.send(IPC.SECURITY_ALERT, bannedProc)
+      }
+
+      try {
+        execSync(`taskkill /F /IM ${TARGET_PROCESS}`)
+      } catch (e) {
+        log.error("Failed to kill game on violation:", e)
+      }
+      stopPoll()
+      setActivePid(null)
+      return
+    }
+    // ------------------------------
+
     const pid = await findGameProcess()
     if (pid === null) {
       stopPoll()
@@ -93,6 +138,16 @@ export function launchGame(host: string, port: number): LaunchResult {
     return { ok: false, error: "samp.exe no está instalado" }
   }
 
+  // --- BIG SMOKE ANTICHEAT ---
+  const acResult = runAnticheatCheck(gameDir)
+  if (!acResult.ok) {
+    return {
+      ok: false,
+      error: acResult.detail ?? "Mod no autorizado detectado.",
+    }
+  }
+  // ----------------------------
+
   try {
     const child = spawn(sampExe, [`${host}:${port}`], {
       cwd: gameDir,
@@ -100,6 +155,7 @@ export function launchGame(host: string, port: number): LaunchResult {
       stdio: "ignore",
     })
     child.unref()
+    setPlayingActivity(host, port)
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "spawn failed" }
   }

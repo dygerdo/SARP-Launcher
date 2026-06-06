@@ -1,12 +1,35 @@
-import { app, BrowserWindow, Menu } from "electron"
+import { app, BrowserWindow, Menu, Tray } from "electron"
 import { fileURLToPath } from "node:url"
 import path from "node:path"
+import fs from "node:fs"
 import log from "electron-log"
 import { registerIpcHandlers } from "./ipc/handlers"
 import { IPC } from "./ipc/channels"
 import { detectRunningGame } from "./services/launcher"
 import { sweepLauncherTemp } from "./services/tempSweep"
 import { initUpdater } from "./services/updater"
+import { initDiscordRPC } from "./services/discord"
+
+const isSingleInstance = app.requestSingleInstanceLock()
+if (!isSingleInstance) {
+  app.quit()
+  process.exit(0)
+}
+
+app.on("second-instance", (_event, commandLine) => {
+  if (win) {
+    if (win.isMinimized()) win.restore()
+    win.focus()
+
+    // Manejar el protocolo si viene en la línea de comandos
+    const url = commandLine.find((arg) => arg.startsWith("sarp-launcher://"))
+    if (url) {
+      log.info("Deep link received:", url)
+      // Aquí podrías emitir un evento al renderer para que haga algo
+    }
+  }
+})
+
 import {
   attachWindowStatePersistence,
   loadInitialBounds,
@@ -14,14 +37,39 @@ import {
   MIN_WIDTH,
 } from "./services/windowState"
 
+// Suppress internal Chromium logs like "Invalid cache size" which are harmless
+// but clutter the console. 3 = FATAL only.
+app.commandLine.appendSwitch("log-level", "3")
+app.commandLine.appendSwitch("disable-http-cache")
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-process.env.APP_ROOT = path.join(__dirname, "..")
+const APP_ROOT = path.join(__dirname, "..")
+process.env.APP_ROOT = APP_ROOT
 const VITE_DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL
-const RENDERER_DIST = path.join(process.env.APP_ROOT, "dist")
-const ICON_PATH = VITE_DEV_SERVER_URL
-  ? path.join(process.env.APP_ROOT, "public", "favicon.ico")
-  : path.join(process.resourcesPath, "favicon.ico")
+const RENDERER_DIST = path.join(APP_ROOT, "dist")
+
+// Robust icon resolution
+function resolveIconPath(): string | undefined {
+  // 1. Try public path (Dev)
+  const devIco = path.join(APP_ROOT, "public", "favicon.ico")
+  if (fs.existsSync(devIco)) return devIco
+
+  const devPng = path.join(APP_ROOT, "public", "logo-squared.png")
+  if (fs.existsSync(devPng)) return devPng
+
+  // 2. Try resources path (Production)
+  const prodIco = path.join(process.resourcesPath, "favicon.ico")
+  if (fs.existsSync(prodIco)) return prodIco
+
+  // 3. Last resort: current directory
+  const rootIco = path.join(__dirname, "favicon.ico")
+  if (fs.existsSync(rootIco)) return rootIco
+
+  return undefined
+}
+
+const ICON_PATH = resolveIconPath()
 
 // In production, route every console.* call through electron-log so logs land
 // in %APPDATA%\<app>\logs\main.log instead of stdout. Stops users who launch
@@ -33,13 +81,37 @@ if (app.isPackaged) {
 }
 
 let win: BrowserWindow | null = null
+let tray: Tray | null = null
+
+function createTray() {
+  if (!ICON_PATH) return
+  tray = new Tray(ICON_PATH)
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Mostrar Launcher",
+      click: () => {
+        if (win) {
+          win.show()
+          win.focus()
+        }
+      },
+    },
+    { type: "separator" },
+    { label: "Salir", click: () => app.quit() },
+  ])
+  tray.setToolTip("San Andreas Roleplay - Launcher")
+  tray.setContextMenu(contextMenu)
+  tray.on("double-click", () => {
+    win?.show()
+  })
+}
 
 function createWindow() {
   const bounds = loadInitialBounds()
 
   win = new BrowserWindow({
     title: "San Andreas Roleplay - SA:MP Launcher",
-    icon: ICON_PATH,
+    icon: ICON_PATH ?? undefined,
     width: bounds.width,
     height: bounds.height,
     x: bounds.x,
@@ -95,19 +167,39 @@ function createWindow() {
   win.webContents.on("context-menu", (event) => event.preventDefault())
 
   if (VITE_DEV_SERVER_URL) {
-    win.loadURL(VITE_DEV_SERVER_URL)
+    win.loadURL(VITE_DEV_SERVER_URL).catch((err) => {
+      log.error("Failed to load dev server URL:", err)
+      // Fallback to local files if dev server is unreachable
+      if (!app.isPackaged && fs.existsSync(path.join(RENDERER_DIST, "index.html"))) {
+        win?.loadFile(path.join(RENDERER_DIST, "index.html"))
+      }
+    })
   } else {
     win.loadFile(path.join(RENDERER_DIST, "index.html"))
   }
 }
 
 app.whenReady().then(() => {
-  // Strip Electron's default application menu — kills the View → Toggle
-  // Developer Tools entry and its accelerators across the whole app.
+  // Register custom protocol for Discord Join button
+  app.setAsDefaultProtocolClient("sarp-launcher")
+
+  // Strip Electron's default application menu
   Menu.setApplicationMenu(null)
   registerIpcHandlers()
+
   createWindow()
+
+  // Tray creation can fail if the icon is locked or invalid.
+  // Wrap in try-catch so it doesn't block window creation.
+  try {
+    createTray()
+  } catch (err) {
+    log.error("Failed to create tray:", err)
+  }
+
   detectRunningGame()
+  initDiscordRPC()
+
   // Fire-and-forget — never block window creation on filesystem I/O.
   sweepLauncherTemp().catch(() => undefined)
   if (win) initUpdater(win)

@@ -28,11 +28,19 @@ export const IPC = {
   CACHE_INSTALL: "cache:install",
   CACHE_INSTALL_PROGRESS: "cache:install:progress",
   APP_GET_VERSION: "app:get-version",
+  UPDATER_NO_UPDATE: "updater:no-update",
   UPDATER_AVAILABLE: "updater:available",
   UPDATER_PROGRESS: "updater:progress",
   UPDATER_DOWNLOADED: "updater:downloaded",
   UPDATER_ERROR: "updater:error",
   UPDATER_QUIT_AND_INSTALL: "updater:quit-and-install",
+  MODS_SCAN_ESSENTIALS: "mods:scan-essentials",
+  MODS_SCAN_INSTALLED: "mods:scan-installed",
+  MODS_SCAN_CATALOG: "mods:scan-catalog",
+  MODS_INSTALL: "mods:install",
+  MODS_UNINSTALL: "mods:uninstall",
+  MODS_INSTALL_PROGRESS: "mods:install-progress",
+  SECURITY_ALERT: "security:alert",
 } as const
 
 export interface GameStatus {

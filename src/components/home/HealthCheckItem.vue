@@ -1,6 +1,9 @@
 <script setup lang="ts">
-import { computed } from "vue"
+import { computed, ref, onMounted } from "vue"
 import type { CheckState } from "@/stores/healthCheck"
+import Dialog from "primevue/dialog"
+import type { MenuItem } from "primevue/menuitem"
+import Checkbox from "primevue/checkbox"
 
 export type ItemActionVariant = "primary" | "secondary"
 
@@ -40,7 +43,32 @@ const props = defineProps<{
   reserveSublineSpace?: boolean
   action?: ItemAction
   inlineAction?: InlineAction
+  menuItems?: MenuItem[]
 }>()
+
+const settingsVisible = ref(false)
+
+const minimizeToTray = ref(false)
+
+onMounted(async () => {
+  minimizeToTray.value = (await window.launcher.getStore("minimizeToTray")) || false
+})
+
+async function handleTrayChange() {
+  await window.launcher.setStore("minimizeToTray", minimizeToTray.value)
+}
+
+function onTrayOptionClick() {
+  minimizeToTray.value = !minimizeToTray.value
+  handleTrayChange()
+}
+
+function handleDynamicOptionClick(item: MenuItem) {
+  if (item.command) {
+    item.command({ item, originalEvent: new Event("click") })
+  }
+  settingsVisible.value = false
+}
 
 const icon = computed(() => {
   switch (props.state) {
@@ -122,8 +150,103 @@ const actionProgressFillClass = computed(() =>
         <slot name="extras" />
       </div>
     </div>
+
+    <div v-if="menuItems && menuItems.length > 0" class="flex flex-shrink-0 items-center">
+      <button
+        type="button"
+        class="mt-1 flex h-7 w-7 items-center justify-center rounded-md border border-white/5 bg-transparent text-white/30 transition-all hover:bg-white/5 hover:text-white/60 active:scale-95"
+        title="Opciones"
+        @click="settingsVisible = true"
+      >
+        <i class="pi pi-cog text-sm" />
+      </button>
+
+      <Dialog
+        v-model:visible="settingsVisible"
+        modal
+        :header="`Ajustes de ${label}`"
+        :style="{ width: '380px' }"
+        :pt="{
+          root: 'bg-[#0d0d0d] border border-orange-500/30 rounded-xl shadow-[0_0_60px_rgba(249,115,22,0.15)] flex flex-col overflow-hidden',
+          header:
+            'bg-[#1a1a1a] border-b border-white/5 px-6 py-4 flex items-center justify-between',
+          title: 'text-[10px] font-black uppercase tracking-[0.25em] text-white/40 m-0',
+          pcCloseButton:
+            'text-white/20 hover:text-white transition-colors duration-200 bg-transparent border-0 h-8 w-8 flex items-center justify-center rounded-md hover:bg-white/5',
+          content: 'p-0 bg-transparent flex-1',
+          mask: 'backdrop-blur-md bg-black/60 transition-all duration-300',
+        }"
+      >
+        <div class="flex flex-col p-5 gap-3">
+          <!-- Tray Config (Solo para GTA) -->
+          <div v-if="label === 'GTA: San Andreas'" class="mb-1">
+            <div
+              class="flex cursor-pointer items-center gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all duration-200 hover:border-orange-500/20 hover:bg-white/[0.05] group"
+              @click.stop="onTrayOptionClick"
+            >
+              <Checkbox
+                v-model="minimizeToTray"
+                :binary="true"
+                :pt="{
+                  box: ({ props }: any) => ({
+                    class: [
+                      'h-4 w-4 rounded border transition-all duration-300 flex items-center justify-center',
+                      props.modelValue
+                        ? 'bg-orange-500 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.5)]'
+                        : 'border-white/20 bg-white/5 group-hover:border-white/40',
+                    ],
+                  }),
+                  icon: 'text-[10px] text-white',
+                }"
+                @change="handleTrayChange"
+              />
+              <div class="flex flex-col gap-0.5">
+                <span
+                  class="text-[11px] font-black uppercase tracking-widest text-white/80 group-hover:text-white transition-colors"
+                >
+                  Ocultar al jugar
+                </span>
+                <span class="text-[9px] font-medium text-white/25 uppercase tracking-tight">
+                  Minimiza el launcher a la bandeja
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Opciones dinámicas -->
+          <div
+            v-for="(item, index) in menuItems"
+            :key="typeof item.label === 'string' ? item.label : index"
+            class="flex cursor-pointer items-center gap-4 rounded-xl border border-white/5 bg-orange-500/[0.02] p-4 transition-all duration-300 hover:border-orange-500/40 hover:bg-orange-500/[0.08] active:scale-[0.98] group"
+            @click="handleDynamicOptionClick(item)"
+          >
+            <div
+              class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/5 transition-colors group-hover:bg-orange-500/20"
+            >
+              <i
+                :class="[
+                  item.icon,
+                  'text-lg text-white/30 group-hover:text-orange-500 transition-colors',
+                ]"
+              />
+            </div>
+            <div class="flex flex-col gap-1">
+              <span
+                class="text-[11px] font-black uppercase tracking-[0.1em] text-white/90 transition-colors group-hover:text-white"
+              >
+                {{ typeof item.label === "string" ? item.label : "" }}
+              </span>
+              <span class="text-[9px] font-medium text-white/20 uppercase tracking-tight">
+                Acción del sistema
+              </span>
+            </div>
+          </div>
+        </div>
+      </Dialog>
+    </div>
+
     <button
-      v-if="inlineAction"
+      v-if="inlineAction && (!menuItems || menuItems.length === 0)"
       type="button"
       class="mt-0.5 inline-flex h-7 flex-shrink-0 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-xs font-medium text-white/70 transition-colors duration-150 hover:border-white/30 hover:bg-white/[0.04] hover:text-white/95"
       :title="inlineAction.title ?? inlineAction.label"
@@ -147,6 +270,8 @@ const actionProgressFillClass = computed(() =>
         <img
           v-if="action.shield"
           src="/images/admin_shield.png"
+          loading="lazy"
+          decoding="async"
           class="block h-[14px] w-[14px] flex-shrink-0"
           alt=""
           aria-label="Pedirá permisos de administrador"

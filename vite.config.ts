@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => {
   const mainEnvDefines = {
     "process.env.VITE_CDN_URL": JSON.stringify(env.VITE_CDN_URL ?? ""),
     "process.env.VITE_GAME_CACHE_FOLDER": JSON.stringify(env.VITE_GAME_CACHE_FOLDER ?? ""),
+    "process.env.GH_TOKEN": JSON.stringify(env.GH_TOKEN ?? ""),
   }
 
   return {
@@ -53,7 +54,13 @@ export default defineConfig(({ mode }) => {
             build: {
               outDir: "dist-electron",
               rollupOptions: {
-                external: ["electron-store", "electron-updater", "electron-log", "extract-zip"],
+                external: [
+                  "electron-store",
+                  "electron-updater",
+                  "electron-log",
+                  "extract-zip",
+                  "discord-rpc",
+                ],
               },
             },
           },

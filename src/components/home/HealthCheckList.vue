@@ -8,8 +8,10 @@ import type { HealthEntry } from "@/stores/healthCheck"
 import { useHealthCheckStore } from "@/stores/healthCheck"
 import { useServerPing } from "@/composables/useServerPing"
 import { usePingCountdown } from "@/composables/usePingCountdown"
+import { useRouter } from "vue-router"
 
 const health = useHealthCheckStore()
+const router = useRouter()
 
 const COOLDOWN_MS = 1000
 const onCooldown = ref(false)
@@ -45,16 +47,50 @@ function handleRecheck() {
   health.run({ force: true })
 }
 
-function inlineActionFor(entry: HealthEntry): InlineAction | undefined {
-  if (entry.id !== "gta") return undefined
-  if (entry.state === "checking") return undefined
-  if (health.gtaInstalling) return undefined
-  return {
-    label: "Cambiar ubicación",
-    icon: "pi-folder-open",
-    title: "Selecciona la carpeta donde está instalado GTA: San Andreas",
-    onClick: () => health.pickGameDir(),
+const gtaMenuItems = computed(() => {
+  const items = []
+  const gtaEntry = health.entries.find((e) => e.id === "gta")
+
+  // Always show "Cambiar ubicación" unless installing
+  if (!health.gtaInstalling) {
+    items.push({
+      label: "Cambiar ubicación",
+      icon: "pi pi-folder-open",
+      command: () => health.pickGameDir(),
+    })
   }
+
+  // Show "Abrir carpeta" only if location is valid (OK or warning with path)
+  if (gtaEntry?.state === "ok") {
+    items.push({
+      label: "Abrir carpeta",
+      icon: "pi pi-external-link",
+      command: async () => {
+        const path = await window.launcher.getStore("gtaPath")
+        if (path) window.launcher.openExternal(targetPath(path))
+      },
+    })
+  }
+
+  // Add "Reinstalar" if already installed
+  if (gtaEntry?.state === "ok" && !health.gtaInstalling) {
+    items.push({
+      label: "Reinstalar GTA",
+      icon: "pi pi-download",
+      command: () => health.installGta(),
+    })
+  }
+
+  return items
+})
+
+// Fix for windows path handling in openExternal
+function targetPath(p: string) {
+  return p.replace(/\//g, "\\")
+}
+
+function inlineActionFor(_entry: HealthEntry): InlineAction | undefined {
+  return undefined // We use menuItems now
 }
 
 function actionFor(entry: HealthEntry): ItemAction | undefined {
@@ -166,18 +202,29 @@ onMounted(() => {
           :reserve-subline-space="entry.id === 'server'"
           :action="actionFor(entry)"
           :inline-action="inlineActionFor(entry)"
+          :menu-items="entry.id === 'gta' ? gtaMenuItems : undefined"
         >
-          <template
-            v-if="entry.id === 'gta' && entry.state === 'ok' && health.gtaMods.length > 0"
-            #extras
-          >
+          <template v-if="entry.id === 'gta' && entry.state === 'ok'" #extras>
             <div class="flex flex-shrink-0 flex-wrap items-center gap-1.5">
               <ModChip
-                v-for="mod in health.gtaMods"
+                v-for="mod in health.gtaMods.filter(
+                  (m) => !(m.id === 'asi-loader' && health.asiloaderMissing),
+                )"
                 :id="mod.id"
                 :key="mod.id"
                 :label="mod.label"
               />
+              <!-- ASI Loader missing badge -->
+              <button
+                v-if="health.asiloaderMissing"
+                type="button"
+                class="inline-flex items-center gap-1 rounded-full border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 text-[10px] font-semibold text-rose-300 transition hover:bg-rose-500/25 -webkit-app-region-no-drag"
+                title="Ir a Mods para reparar el ASI Loader"
+                @click="router.push('/mods')"
+              >
+                <i class="pi pi-times text-[9px]" />
+                Reparar ASI Loader
+              </button>
             </div>
           </template>
         </HealthCheckItem>

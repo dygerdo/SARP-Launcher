@@ -6,9 +6,20 @@ import App from "./App.vue"
 import "primeicons/primeicons.css"
 import "./style.css"
 
+import router from "./router"
+import ConfirmationService from "primevue/confirmationservice"
+import ToastService from "primevue/toastservice"
+import Tooltip from "primevue/tooltip"
+
+import { preloadLauncherAssets } from "./utils/preloader"
+
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(router)
+app.use(ConfirmationService)
+app.use(ToastService)
+app.directive("tooltip", Tooltip)
 app.use(PrimeVue, {
   theme: {
     preset: Aura,
@@ -18,14 +29,20 @@ app.use(PrimeVue, {
   },
 })
 
-app.mount("#app")
+// Initialize the app but delay showing it until assets are ready
+const init = async () => {
+  app.mount("#app")
 
-// Hand off from the static boot skeleton (rendered by index.html before Vue
-// loads) to the Vue-rendered UI. We wait one rAF so the first Vue paint has
-// landed, then trigger a CSS fade by toggling data-app-mounted, and finally
-// remove the skeleton node after the transition so its keyframe animations
-// stop consuming a render thread.
-requestAnimationFrame(() => {
+  try {
+    // Wait for the next tick + images to preload
+    await Promise.all([
+      new Promise((resolve) => requestAnimationFrame(resolve)),
+      preloadLauncherAssets(),
+    ])
+  } catch (e) {
+    console.error("Preloading error:", e)
+  }
+
   document.documentElement.dataset.appMounted = "true"
   const skeleton = document.getElementById("boot-skeleton")
   if (skeleton) {
@@ -36,8 +53,13 @@ requestAnimationFrame(() => {
       },
       { once: true },
     )
-    // Defensive fallback: if the transitionend never fires (reduced-motion,
-    // someone overrides the CSS, etc.), drop the node after a hard timeout.
-    setTimeout(() => skeleton.remove(), 1000)
+    // Absolute fallback to ensure the app is never stuck behind the skeleton
+    setTimeout(() => {
+      if (document.body.contains(skeleton)) {
+        skeleton.remove()
+      }
+    }, 1500)
   }
-})
+}
+
+init()

@@ -8,6 +8,13 @@ import type {
   HealthCheckPayload,
   WindowState,
 } from "./ipc/channels"
+import type {
+  ModDefinition,
+  ModFile,
+  EssentialsStatus,
+  InstallProgressEvent,
+  SystemDependency,
+} from "../src/types/mods"
 import type { LauncherStoreSchema } from "./services/store"
 import type { PingResult } from "./services/sampQuery"
 import type { LauncherManifest } from "./services/manifest"
@@ -135,8 +142,69 @@ const launcherApi = {
   },
 
   quitAndInstall: (): Promise<void> => ipcRenderer.invoke(IPC.UPDATER_QUIT_AND_INSTALL),
+  mods: {
+    scanEssentials: (): Promise<EssentialsStatus> => ipcRenderer.invoke(IPC.MODS_SCAN_ESSENTIALS),
+    scanInstalled: (files: ModFile[]): Promise<Record<string, boolean>> =>
+      ipcRenderer.invoke(IPC.MODS_SCAN_INSTALLED, files),
+    scanCatalog: (): Promise<Record<string, Record<string, boolean>>> =>
+      ipcRenderer.invoke(IPC.MODS_SCAN_CATALOG),
+    install: (mod: ModDefinition): Promise<void> => ipcRenderer.invoke(IPC.MODS_INSTALL, mod),
+    uninstall: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC.MODS_UNINSTALL, mod),
+    onInstallProgress: (
+      callback: (event: IpcRendererEvent, data: InstallProgressEvent) => void,
+    ): (() => void) => {
+      const listener = (event: IpcRendererEvent, data: InstallProgressEvent) =>
+        callback(event, data)
+      ipcRenderer.on(IPC.MODS_INSTALL_PROGRESS, listener)
+      return () => ipcRenderer.off(IPC.MODS_INSTALL_PROGRESS, listener)
+    },
+    onSecurityAlert: (callback: (message: string) => void): (() => void) => {
+      const listener = (_event: IpcRendererEvent, message: string) => callback(message)
+      ipcRenderer.on(IPC.SECURITY_ALERT, listener)
+      return () => ipcRenderer.off(IPC.SECURITY_ALERT, listener)
+    },
+  },
+  deps: {
+    scan: (deps: SystemDependency[]) => ipcRenderer.invoke("deps:scan", deps),
+    openUrl: (url: string) => ipcRenderer.invoke("deps:open-url", url),
+  },
 }
 
 export type LauncherApi = typeof launcherApi
 
 contextBridge.exposeInMainWorld("launcher", launcherApi)
+
+// Dedicated updater bridge — consumed by the Pinia updater store in the renderer.
+// Separate from launcherApi so the store can call removeAll() cleanly without
+// disturbing any other IPC subscriptions.
+const updaterApi = {
+  onNoUpdate: (cb: () => void): void => {
+    ipcRenderer.on(IPC.UPDATER_NO_UPDATE, cb)
+  },
+  onAvailable: (cb: (info: UpdaterAvailable) => void): void => {
+    ipcRenderer.on(IPC.UPDATER_AVAILABLE, (_e, info: UpdaterAvailable) => cb(info))
+  },
+  onProgress: (cb: (p: UpdaterProgress) => void): void => {
+    ipcRenderer.on(IPC.UPDATER_PROGRESS, (_e, p: UpdaterProgress) => cb(p))
+  },
+  onDownloaded: (cb: (info: UpdaterDownloaded) => void): void => {
+    ipcRenderer.on(IPC.UPDATER_DOWNLOADED, (_e, info: UpdaterDownloaded) => cb(info))
+  },
+  onError: (cb: (msg: string) => void): void => {
+    ipcRenderer.on(IPC.UPDATER_ERROR, (_e, msg: string) => cb(msg))
+  },
+  removeAll: (): void => {
+    ;[
+      IPC.UPDATER_NO_UPDATE,
+      IPC.UPDATER_AVAILABLE,
+      IPC.UPDATER_PROGRESS,
+      IPC.UPDATER_DOWNLOADED,
+      IPC.UPDATER_ERROR,
+    ].forEach((ch) => ipcRenderer.removeAllListeners(ch))
+  },
+}
+
+export type UpdaterApi = typeof updaterApi
+
+contextBridge.exposeInMainWorld("updater", updaterApi)

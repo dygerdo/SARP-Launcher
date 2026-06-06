@@ -46,15 +46,22 @@ const LOOKS: Record<DialogType, Look> = {
 
 const look = computed<Look>(() => (current.value ? LOOKS[current.value.type] : LOOKS.info))
 
-function close(): void {
-  if (current.value) dialog.dismiss(current.value.id)
+function accept(): void {
+  if (current.value) dialog.dismiss(current.value.id, true)
+}
+
+function cancel(): void {
+  if (current.value) dialog.dismiss(current.value.id, false)
 }
 
 function onKeydown(e: KeyboardEvent): void {
   if (!current.value) return
-  if (e.key === "Escape" || e.key === "Enter") {
+  if (e.key === "Escape") {
     e.preventDefault()
-    close()
+    cancel()
+  } else if (e.key === "Enter") {
+    e.preventDefault()
+    accept()
   }
 }
 
@@ -75,7 +82,7 @@ watch(current, (open) => {
       v-if="current"
       class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-6 backdrop-blur-sm"
       style="-webkit-app-region: no-drag"
-      @click.self="close"
+      @click.self="cancel"
     >
       <div
         role="dialog"
@@ -101,11 +108,19 @@ watch(current, (open) => {
         </div>
         <div class="mt-5 flex justify-end gap-2 border-t border-white/5 bg-white/[0.02] px-5 py-3">
           <button
+            v-if="current.cancelLabel"
+            type="button"
+            class="inline-flex h-8 min-w-[80px] items-center justify-center rounded-md border border-white/10 bg-white/5 px-3 text-xs font-bold text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white"
+            @click="cancel"
+          >
+            {{ current.cancelLabel }}
+          </button>
+          <button
             type="button"
             class="inline-flex h-8 min-w-[80px] items-center justify-center rounded-md px-3 text-xs font-bold transition-colors duration-150"
             :class="look.buttonClass"
             autofocus
-            @click="close"
+            @click="accept"
           >
             {{ current.okLabel ?? "Aceptar" }}
           </button>

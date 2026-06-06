@@ -22,16 +22,14 @@ export async function isEffectivelyEmpty(path: string): Promise<boolean> {
 const TYPICAL_GTA_PATH = "C:\\Program Files (x86)\\Rockstar Games\\GTA San Andreas"
 
 // Files and folders that must all exist for a path to count as a real GTA SA
-// install. vorbis*.dll are part of the original 1.0 release; SA-MP expects
-// them alongside gta_sa.exe. The folders are part of any vanilla install —
-// missing any is a strong signal the path is not GTA SA at all.
-export const REQUIRED_GTA_FILES = [
-  "gta_sa.exe",
-  "vorbis.dll",
-  "vorbisFile.dll",
-  "vorbisHooked.dll",
-] as const
+// install. Only require the files that ship with the original game install —
+// ASI Loader and other mods are checked separately (scanEssentials IPC).
+export const REQUIRED_GTA_FILES = ["gta_sa.exe", "vorbis.dll"] as const
 
+// vorbisFile.dll and vorbisHooked.dll belong to Ultimate ASI Loader and must
+// NOT be listed as required GTA files: removing them is exactly the scenario
+// where the user needs to repair the ASI Loader, and getGameDir() must still
+// return a valid path so the repair download can proceed.
 export const REQUIRED_GTA_DIRS = ["anim", "audio", "data", "models"] as const
 
 // Sensible starting point for the dialog when the user has never picked a
@@ -118,6 +116,7 @@ export async function pickGameDir(): Promise<PickGameDirResult> {
     return {
       ok: false,
       error: `La carpeta seleccionada no es una instalación válida de GTA: San Andreas. Falta ${missingNames.join(", ")}.`,
+      path: selected,
     }
   }
 

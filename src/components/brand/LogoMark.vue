@@ -17,6 +17,9 @@ withDefaults(
       <img
         src="/logo.png"
         alt="SARP"
+        loading="eager"
+        decoding="async"
+        fetchpriority="high"
         class="relative w-auto select-none drop-shadow-[0_6px_28px_rgba(0,0,0,0.55)]"
         :class="{
           'h-12': size === 'sm',

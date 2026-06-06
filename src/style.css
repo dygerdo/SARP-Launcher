@@ -12,8 +12,8 @@ body,
     -apple-system,
     "Segoe UI",
     sans-serif;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   cursor: default;
 }
 
@@ -33,10 +33,13 @@ body {
   min-width: 0;
 }
 
+/* stylelint-disable-next-line property-no-vendor-prefix */
 img {
-  -webkit-user-drag: none;
-  user-select: none;
+  /* Electron runs on Chromium — -webkit-user-drag works correctly here.
+     Firefox is not a supported runtime for this desktop launcher. */
+  -webkit-user-drag: none; /* stylelint-disable-line property-no-vendor-prefix */
   -webkit-user-select: none;
+  user-select: none;
   pointer-events: none;
 }
 
@@ -52,8 +55,8 @@ select,
 input,
 textarea,
 [contenteditable="true"] {
-  user-select: text;
   -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Reusable shimmer block for skeleton placeholders. Use as
@@ -82,4 +85,110 @@ textarea,
   to {
     transform: translateX(100%);
   }
+}
+
+/* Mask / Backdrop */
+.p-dialog-mask {
+  background: rgba(0, 0, 0, 0.8) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.p-dialog {
+  background: #111111 !important;
+  border: 1px solid #2a2a2a !important;
+  color: white !important;
+  border-radius: 12px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7) !important;
+}
+
+.p-confirmdialog.p-dialog {
+  max-width: 340px !important;
+}
+
+.p-dialog-header {
+  background: #111111 !important;
+  border-bottom: 1px solid #1a1a1a !important;
+  padding: 0.85rem 1rem !important;
+  color: white !important;
+}
+
+.p-dialog-title {
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.p-dialog-content {
+  background: #111111 !important;
+  padding: 1.25rem 1rem !important;
+  color: #9ca3af !important;
+  font-size: 0.8rem !important;
+  line-height: 1.5 !important;
+}
+
+.p-dialog-footer {
+  background: #111111 !important;
+  border-top: 1px solid #1a1a1a !important;
+  padding: 0.75rem 1rem !important;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 0.5rem !important;
+}
+
+.p-confirm-dialog-icon {
+  font-size: 1rem !important;
+  margin-right: 0.75rem !important;
+  color: #f97316 !important;
+}
+
+.p-dialog-header-close {
+  width: 1.5rem !important;
+  height: 1.5rem !important;
+  border-radius: 4px !important;
+  background: transparent !important;
+  color: #4b5563 !important;
+  transition: all 0.2s !important;
+}
+
+.p-dialog-header-close:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: white !important;
+}
+
+.p-dialog-footer .p-button {
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 4px !important;
+  transition: all 0.2s !important;
+}
+
+/* Primary buttons in dialogs */
+.p-dialog-footer .p-button:not(.p-button-secondary):not(.p-button-outlined) {
+  background: #f97316 !important;
+  border-color: #f97316 !important;
+  color: black !important;
+}
+
+.p-dialog-footer .p-button:not(.p-button-secondary):not(.p-button-outlined):hover {
+  background: #fb923c !important;
+  border-color: #fb923c !important;
+}
+
+/* Secondary/Outlined buttons in dialogs */
+.p-dialog-footer .p-button.p-button-secondary {
+  background: transparent !important;
+  border: 1px solid #333 !important;
+  color: #9ca3af !important;
+}
+
+.p-dialog-footer .p-button.p-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border-color: #444 !important;
+  color: white !important;
 }

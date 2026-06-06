@@ -2,7 +2,7 @@ import { existsSync, statSync } from "node:fs"
 import { join } from "node:path"
 import { getGameDir } from "./paths"
 
-export type ModId = "modloader" | "asi-loader"
+export type ModId = "modloader" | "asi-loader" | "cleo"
 
 export interface DetectedMod {
   id: ModId
@@ -25,15 +25,21 @@ function dirExists(path: string): boolean {
 
 const MODS: ModDescriptor[] = [
   {
+    id: "cleo",
+    label: "CLEO 4",
+    detect: (gameDir) => existsSync(join(gameDir, "cleo.asi")) && dirExists(join(gameDir, "cleo")),
+  },
+  {
     id: "modloader",
-    label: "Modloader",
+    label: "ModLoader",
     detect: (gameDir) =>
       existsSync(join(gameDir, "modloader.asi")) && dirExists(join(gameDir, "modloader")),
   },
   {
     id: "asi-loader",
-    label: "Ultimate ASI Loader",
-    detect: (gameDir) => existsSync(join(gameDir, "dinput8.dll")),
+    label: "ASI Loader",
+    detect: (gameDir) =>
+      existsSync(join(gameDir, "vorbisFile.dll")) || existsSync(join(gameDir, "dinput8.dll")),
   },
 ]
 

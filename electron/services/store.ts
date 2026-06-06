@@ -1,5 +1,18 @@
 import Store from "electron-store"
 
+interface StoreModFile {
+  filename: string
+  destination: string
+  isFolder: boolean
+}
+
+interface StoreModInfo {
+  installedAt: string
+  files: StoreModFile[]
+  version: string
+  status: string
+}
+
 export interface WindowStateSchema {
   width: number
   height: number
@@ -22,6 +35,11 @@ export interface LauncherStoreSchema {
   /** Last known window bounds + flags. Restored on next launch and clamped
    *  to a visible display before being applied. */
   windowState: WindowStateSchema | null
+  /** Dictionary of installed mods by their ID. Stores installation date,
+   *  file list, and version for uninstallation and updates. */
+  installedMods: Record<string, StoreModInfo> | null
+  /** Whether to hide the launcher to system tray while the game is running */
+  minimizeToTray: boolean
 }
 
 const store = new Store<LauncherStoreSchema>({
@@ -33,6 +51,8 @@ const store = new Store<LauncherStoreSchema>({
     cacheInstallTempDir: null,
     installedCacheSize: null,
     windowState: null,
+    installedMods: null,
+    minimizeToTray: false,
   },
 })
 

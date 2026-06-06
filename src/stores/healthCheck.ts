@@ -1,6 +1,7 @@
 import { defineStore } from "pinia"
 import { computed, ref, watch } from "vue"
 import { useServerPing } from "@/composables/useServerPing"
+import { useModsStore } from "@/stores/mods"
 import type { SampVerificationResult } from "../../electron/services/sampVerify"
 import type { InstallProgress } from "../../electron/services/sampInstall"
 import type { DetectedMod } from "../../electron/services/gtaMods"
@@ -99,6 +100,11 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
   const gameRunning = ref<boolean>(false)
   const serverPing = useServerPing()
   const dialog = useDialogStore()
+  const modsStore = useModsStore()
+
+  // True when the ASI Loader essential files are not found in the game folder.
+  // Drives: play-button disabled state, GTA row "Reparar ASI Loader" badge.
+  const asiloaderMissing = computed(() => modsStore.asiloaderMissing)
 
   // Bootstrap the game-status mirror and keep it in sync with the OS.
   void window.launcher.getGameStatus().then((status) => {
@@ -203,6 +209,17 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
 
     const result = await window.launcher.verifySamp()
     lastSampVerification.value = result
+
+    // If GTA is being installed, we don't show SAMP errors as they are irrelevant
+    // until the base game exists.
+    if (gtaInstalling.value) {
+      update("samp", {
+        state: "warning",
+        detail: "Esperando a la instalación de GTA.",
+      })
+      return
+    }
+
     if (result.ok) {
       update("samp", { state: "ok", detail: undefined })
       return
@@ -233,10 +250,12 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     // Don't surface the cache problem as an error while GTA or SA:MP are
     // still missing — installing the cache only makes sense once the game
     // can actually use it. Show a warning explaining the wait instead.
-    if (!gtaOk || !sampOk) {
+    if (!gtaOk || !sampOk || gtaInstalling.value) {
       update("cache", {
         state: "warning",
-        detail: "Esperando a que GTA y SA:MP estén listos.",
+        detail: gtaInstalling.value
+          ? "Esperando a la instalación de GTA."
+          : "Esperando a que GTA y SA:MP estén listos.",
       })
       return
     }
@@ -307,7 +326,7 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
   }
 
   async function installSamp(): Promise<void> {
-    if (installing.value) return
+    if (installing.value || gtaInstalling.value) return
     installing.value = true
     installProgress.value = { phase: "preflight", percent: 0 }
 
@@ -343,10 +362,64 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
       return { ok: true }
     }
     if (result.cancelled) return { ok: false, cancelled: true }
+
+    if (gtaInstalling.value) return { ok: false, error: "Ya hay una instalación en curso." }
+
     if (result.error) {
-      void dialog.error("Carpeta inválida", result.error)
+      if (result.path) {
+        // If we have a path but it's invalid, offer to install GTA there
+        const confirmed = await dialog.confirm(
+          "Carpeta inválida",
+          `${result.error}\n\n¿Deseas instalar GTA: San Andreas en esta ubicación?`,
+          "Instalar",
+          "Cancelar",
+        )
+
+        if (confirmed) {
+          // Internal helper for installation in a specific directory
+          return installGtaInDir(result.path)
+        }
+      } else {
+        void dialog.error("Carpeta inválida", result.error)
+      }
     }
     return { ok: false, error: result.error }
+  }
+
+  /**
+   * Helper to install GTA in a specific directory bypassing the directory picker.
+   * Useful when jumping from pickGameDir's error state.
+   */
+  async function installGtaInDir(targetDir: string): Promise<{ ok: boolean; error?: string }> {
+    if (gtaInstalling.value) return { ok: false, error: "Ya hay una instalación en curso." }
+
+    gtaInstalling.value = true
+    gtaInstallProgress.value = { phase: "preflight", percent: 0 }
+
+    // Force states to reflect transition and disable the Play button
+    update("gta", { state: "checking", detail: "Instalando..." })
+    update("samp", { state: "warning", detail: "Esperando a GTA..." })
+    update("cache", { state: "warning", detail: "Esperando a GTA..." })
+
+    const detach = window.launcher.onGtaInstallProgress((progress) => {
+      gtaInstallProgress.value = progress
+    })
+
+    try {
+      const result = await window.launcher.installGta(targetDir)
+      if (!result.ok) {
+        const error = result.error ?? "La instalación falló."
+        void dialog.error("Error al instalar", error)
+        return { ok: false, error }
+      }
+      await run()
+      void dialog.success("Listo", "GTA: San Andreas se instaló correctamente.")
+      return { ok: true }
+    } finally {
+      detach()
+      gtaInstalling.value = false
+      gtaInstallProgress.value = null
+    }
   }
 
   async function installCache(): Promise<void> {
@@ -389,6 +462,11 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     gtaInstalling.value = true
     gtaInstallProgress.value = { phase: "preflight", percent: 0 }
 
+    // Reset health states so they don't show old valid data during installation
+    update("gta", { state: "checking", detail: "Instalando..." })
+    update("samp", { state: "warning", detail: "Esperando a GTA..." })
+    update("cache", { state: "warning", detail: "Esperando a GTA..." })
+
     const detach = window.launcher.onGtaInstallProgress((progress) => {
       gtaInstallProgress.value = progress
     })
@@ -426,6 +504,7 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     cacheInstallProgress,
     cacheActionType,
     gameRunning,
+    asiloaderMissing,
     run,
     installSamp,
     installCache,

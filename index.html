@@ -1,132 +1,146 @@
 <!doctype html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>San Andreas Roleplay - SA:MP Launcher</title>
-    <link rel="preload" as="image" href="/background.png" />
-    <link rel="preload" as="image" href="/logo-squared.png" />
-    <style>
-      html,
-      body,
-      #app {
-        height: 100%;
-        margin: 0;
-        background: #000;
-        color: #fff;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-        overflow: hidden;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>San Andreas Roleplay - SA:MP Launcher</title>
+  <link rel="preload" as="image" href="/background.png" />
+  <link rel="preload" as="image" href="/logo-squared.png" />
+  <style>
+    html,
+    body,
+    #app {
+      height: 100%;
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      background-color: #09090b;
+      background-image:
+        linear-gradient(to bottom right, #18181b, #09090b 60%, #000);
+    }
+
+    #boot-skeleton {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background-image:
+        linear-gradient(to bottom, transparent, transparent 70%, rgba(0, 0, 0, 0.7)),
+        linear-gradient(to bottom right, #18181b, #09090b 60%, #000);
+      z-index: 0;
+    }
+
+    #boot-skeleton::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url("/background.png");
+      background-size: cover;
+      background-position: top;
+      opacity: 0.35;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+
+    #boot-skeleton .titlebar {
+      position: relative;
+      height: 32px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      background: rgba(9, 9, 11, 0.8);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      gap: 8px;
+      z-index: 1;
+    }
+
+    #boot-skeleton .titlebar img {
+      width: 16px;
+      height: 16px;
+    }
+
+    #boot-skeleton .titlebar span {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    #boot-skeleton .center {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+    }
+
+    #boot-skeleton .spinner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-top-color: rgba(251, 146, 60, 0.85);
+      animation: boot-spin 0.9s linear infinite;
+    }
+
+    #boot-skeleton .footer {
+      position: relative;
+      height: 28px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: rgba(255, 255, 255, 0.3);
+      z-index: 1;
+    }
+
+    @keyframes boot-spin {
+      to {
+        transform: rotate(360deg);
       }
-      body {
-        background-color: #09090b;
-        background-image:
-          linear-gradient(to bottom right, #18181b, #09090b 60%, #000);
-      }
-      #boot-skeleton {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        background-image:
-          linear-gradient(to bottom, transparent, transparent 70%, rgba(0, 0, 0, 0.7)),
-          linear-gradient(to bottom right, #18181b, #09090b 60%, #000);
-        z-index: 0;
-      }
-      #boot-skeleton::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image: url("/background.png");
-        background-size: cover;
-        background-position: top;
-        opacity: 0.35;
-        mix-blend-mode: screen;
-        pointer-events: none;
-      }
-      #boot-skeleton .titlebar {
-        position: relative;
-        height: 32px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        padding: 0 12px;
-        background: rgba(9, 9, 11, 0.8);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        gap: 8px;
-        z-index: 1;
-      }
-      #boot-skeleton .titlebar img {
-        width: 16px;
-        height: 16px;
-      }
-      #boot-skeleton .titlebar span {
-        font-size: 11px;
-        font-weight: 500;
-        letter-spacing: 0.1em;
-        color: rgba(255, 255, 255, 0.7);
-      }
-      #boot-skeleton .center {
-        position: relative;
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1;
-      }
-      #boot-skeleton .spinner {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        border: 2px solid rgba(255, 255, 255, 0.12);
-        border-top-color: rgba(251, 146, 60, 0.85);
-        animation: boot-spin 0.9s linear infinite;
-      }
-      #boot-skeleton .footer {
-        position: relative;
-        height: 28px;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 20px;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.15em;
-        color: rgba(255, 255, 255, 0.3);
-        z-index: 1;
-      }
-      @keyframes boot-spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      /* Boot skeleton fades out once main.ts signals that Vue has mounted
-         (it sets data-app-mounted on <html>). We fade rather than hide
-         instantly so there's no flash between Vue's first paint and the
-         skeleton disappearing. pointer-events drops immediately so the
-         user can interact with the real UI even mid-fade. */
-      html[data-app-mounted="true"] #boot-skeleton {
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s ease;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="app"></div>
-    <div id="boot-skeleton" aria-hidden="true">
-      <div class="titlebar">
-        <img src="/logo-squared.png" alt="" />
-        <span>San Andreas Roleplay · Launcher</span>
-      </div>
-      <div class="center">
-        <div class="spinner"></div>
-      </div>
-      <div class="footer">
-        <span>Cargando...</span>
-        <span>sarp.es</span>
-      </div>
+    }
+
+    /* Boot skeleton fades out once main.ts signals that Vue has mounted
+         (it sets data-app-mounted on <html>). Spinner stops first,
+         then the full skeleton fades out. */
+    html[data-app-mounted="true"] #boot-skeleton .spinner {
+      opacity: 0;
+      animation: none;
+      transition: opacity 0.15s ease;
+    }
+
+    html[data-app-mounted="true"] #boot-skeleton {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease 0.1s;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+  <div id="boot-skeleton" aria-hidden="true">
+    <div class="titlebar">
+      <img src="/logo-squared.png" alt="" />
+      <span>San Andreas Roleplay · Launcher</span>
     </div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <div class="center">
+      <div class="spinner"></div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

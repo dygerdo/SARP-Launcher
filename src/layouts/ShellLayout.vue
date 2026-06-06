@@ -4,6 +4,8 @@ import TitleBar from "@/components/brand/TitleBar.vue"
 import UpdaterBanner from "@/components/brand/UpdaterBanner.vue"
 import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
 import { useWindowState } from "@/composables/useWindowState"
+import { useToast } from "primevue/usetoast"
+import { onUnmounted } from "vue"
 
 withDefaults(
   defineProps<{
@@ -21,9 +23,25 @@ const buildId = __GIT_COMMIT__
 const currentYear = new Date().getFullYear()
 
 const { isFullscreen, toggleFullscreen } = useWindowState()
+const toast = useToast()
+
+let cleanupSecurity: (() => void) | null = null
 
 onMounted(async () => {
   version.value = await window.launcher.getAppVersion()
+
+  cleanupSecurity = window.launcher.mods.onSecurityAlert((bannedProc) => {
+    toast.add({
+      severity: "error",
+      summary: "Amenaza Detectada",
+      detail: `Big Smoke dice: "¡Eh! Quita ese '${bannedProc}' antes de entrar." El juego se ha cerrado por seguridad.`,
+      life: 8000,
+    })
+  })
+})
+
+onUnmounted(() => {
+  if (cleanupSecurity) cleanupSecurity()
 })
 
 defineSlots<{
@@ -34,6 +52,14 @@ defineSlots<{
 
 function openSite() {
   window.launcher.openExternal("https://sarp.es")
+}
+
+function openUCP() {
+  window.launcher.openExternal("https://ucp.sarp.es/app/ucp/home")
+}
+
+function openForum() {
+  window.launcher.openExternal("https://forum.sarp.es/")
 }
 </script>
 
@@ -51,6 +77,46 @@ function openSite() {
 
     <TitleBar v-if="!isFullscreen" />
     <UpdaterBanner />
+    <nav
+      class="relative z-10 flex items-center justify-center gap-10 border-b border-white/5 bg-black/20 py-3.5"
+      style="-webkit-app-region: no-drag"
+    >
+      <router-link
+        to="/"
+        class="text-[11px] uppercase tracking-[0.25em] transition-all hover:text-white"
+        active-class="text-orange-400 font-bold"
+        :class="$route.name === 'home' ? 'text-orange-400' : 'text-white/40'"
+      >
+        Inicio
+      </router-link>
+      <router-link
+        to="/mods"
+        class="text-[11px] uppercase tracking-[0.25em] transition-all hover:text-white"
+        active-class="text-orange-400 font-bold"
+        :class="$route.name === 'mods' ? 'text-orange-400' : 'text-white/40'"
+      >
+        Mods
+      </router-link>
+
+      <div class="absolute right-6 flex items-center gap-3">
+        <button
+          type="button"
+          class="flex items-center gap-1.5 rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+          @click="openUCP"
+        >
+          <i class="pi pi-link text-[8px]" />
+          UCP
+        </button>
+        <button
+          type="button"
+          class="flex items-center gap-1.5 rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
+          @click="openForum"
+        >
+          <i class="pi pi-link text-[8px]" />
+          Foro
+        </button>
+      </div>
+    </nav>
 
     <slot v-if="$slots.belowHeader" name="belowHeader" />
 
@@ -77,6 +143,7 @@ function openSite() {
       </div>
 
       <footer
+        v-if="!loading"
         class="flex items-center justify-between gap-4 px-5 py-2 text-[10px] uppercase tracking-widest text-white/30"
       >
         <div class="flex min-w-0 items-center gap-3">

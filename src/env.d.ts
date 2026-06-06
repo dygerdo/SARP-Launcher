@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 
 import type { LauncherApi } from "../electron/preload"
+import type { UpdaterApi } from "../electron/preload"
+import type { SystemDependency, SystemDepStatus } from "./types/mods"
 
 declare module "*.vue" {
   import type { DefineComponent } from "vue"
@@ -23,6 +25,13 @@ interface ImportMeta {
 declare global {
   interface Window {
     launcher: LauncherApi
+    updater: UpdaterApi
+    api: {
+      deps: {
+        scan: (deps: SystemDependency[]) => Promise<SystemDepStatus[]>
+        openUrl: (url: string) => Promise<void>
+      }
+    }
   }
   /** Short git commit hash baked into the bundle by Vite at build time.
    *  Surfaced in the footer ("v1.0.0 (a3f2b1c)") so support can identify
