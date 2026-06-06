@@ -22,7 +22,7 @@ function openModSubmit() {
       <div class="diagonal-stripes" />
 
       <!-- Corner tag -->
-      <div class="corner-tag">OFICIAL</div>
+      <div class="corner-tag">ESPECIAL</div>
 
       <div class="card-body">
         <!-- Icon -->
@@ -70,7 +70,7 @@ function openModSubmit() {
           <p class="card-eyebrow">Tienda exclusiva</p>
           <h3 class="card-title">Potencia tu<br><em>experiencia</em></h3>
           <p class="card-desc">
-            Vehículos exclusivos, skins únicos y mejoras de cuenta. Apoya el desarrollo de San Andreas Roleplay.
+            Prendas exclusivas, skins únicos y mejoras de cuenta. Apoya el desarrollo de San Andreas Roleplay.
           </p>
         </div>
 
@@ -124,8 +124,8 @@ function openModSubmit() {
 
         <!-- Text -->
         <div class="card-text">
-          <p class="card-eyebrow card-eyebrow--subtle">Comunidad de creadores</p>
-          <h3 class="card-title card-title--sm">¿Creaste un mod?<br><em>Súbelo al launcher</em></h3>
+          <p class="card-eyebrow card-eyebrow--subtle">Registros de Mods</p>
+          <h3 class="card-title card-title--sm">¿No aparece un mod?<br><em>Súbelo al launcher</em></h3>
           <p class="card-desc">
             Envía tu mod para revisión y whitelist. Si cumple los estándares de SARP, lo añadimos oficialmente.
           </p>
@@ -134,12 +134,12 @@ function openModSubmit() {
         <!-- CTA -->
         <div class="card-cta">
           <button class="cta-btn cta-btn--mods" @click.stop="openModSubmit">
-            <span>Enviar mi mod</span>
+            <span>Enviar mod</span>
             <svg class="cta-arrow" viewBox="0 0 16 16" fill="none">
               <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
-          <span class="cta-hint">www.sarp.es</span>
+          <span class="cta-hint">Foro SARP</span>
         </div>
       </div>
     </div>
