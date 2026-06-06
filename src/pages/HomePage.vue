@@ -16,6 +16,10 @@ import type { ServerEvent } from "@/api/public"
 import Dialog from "primevue/dialog"
 import Button from "primevue/button"
 import { useRouter } from "vue-router"
+import actuallyGoodSfxUrl from "@/assets/sounds/actually-good-fahhhh-sfx.aac?url"
+
+const modErrorSound = new Audio(actuallyGoodSfxUrl)
+modErrorSound.volume = 0.8
 
 const health = useHealthCheckStore()
 const mods = useModsStore()
@@ -109,6 +113,7 @@ async function play() {
   await mods.verifyFiles()
   if (brokenMod.value) {
     showBrokenModDialog.value = true
+    void modErrorSound.play().catch(() => {})
     return
   }
 
@@ -117,6 +122,7 @@ async function play() {
   if (res && !res.ok && res.error && res.error.includes("Big Smoke")) {
     anticheatDetail.value = res.error
     showAnticheatDialog.value = true
+    void modErrorSound.play().catch(() => {})
   }
 }
 
@@ -143,6 +149,7 @@ async function continueLaunch() {
   if (res && !res.ok && res.error && res.error.includes("Big Smoke")) {
     anticheatDetail.value = res.error
     showAnticheatDialog.value = true
+    void modErrorSound.play().catch(() => {})
   }
 }
 
