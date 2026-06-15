@@ -42,35 +42,26 @@ import type {
   SystemDependency,
   DepStatus,
 } from "../../src/types/mods"
-import { Mod } from "../domain/models/mod"
 import { MOD_CATALOG } from "../../src/data/mods"
-import { 
-  appService, 
-  windowService, 
-  settingsService, 
-  modVerifierService, 
-  healthService,
-  modController,
-  updateController
-} from "../dependencies"
 
 export function registerIpcHandlers() {
   ipcMain.handle(IPC.STORE_GET, async (_event, key: keyof LauncherStoreSchema) => {
-    return settingsService.get(key)
+    return store.get(key)
   })
 
   ipcMain.handle(
     IPC.STORE_SET,
     async (_event, payload: { key: keyof LauncherStoreSchema; value: unknown }) => {
-      settingsService.set(payload.key, payload.value as any)
+      store.set(payload.key, payload.value as never)
       return true
     },
   )
 
-  ipcMain.handle(IPC.GAME_DIR_GET, async () => settingsService.getGameDir())
+  ipcMain.handle(IPC.GAME_DIR_GET, async () => getGameDir())
 
   ipcMain.handle(IPC.HEALTH_CHECK, async (): Promise<HealthCheckPayload> => {
-    return healthService.performFullCheck()
+    const [gta, samp, cache] = [checkGta(), checkSamp(), await checkCache()]
+    return { gta, samp, cache }
   })
 
   ipcMain.handle(IPC.GAME_LAUNCH, async (_event, payload: GameLaunchPayload) => {
@@ -169,30 +160,46 @@ export function registerIpcHandlers() {
     return installCache(send)
   })
 
-  ipcMain.handle(IPC.APP_GET_VERSION, async (): Promise<string> => appService.getVersion())
+  ipcMain.handle(IPC.APP_GET_VERSION, async (): Promise<string> => app.getVersion())
 
   ipcMain.handle(IPC.UPDATER_QUIT_AND_INSTALL, async () => {
     quitAndInstall()
   })
 
   ipcMain.on(IPC.WINDOW_MINIMIZE, (event) => {
-    windowService.minimize(event.sender)
+    BrowserWindow.fromWebContents(event.sender)?.minimize()
   })
 
   ipcMain.on(IPC.WINDOW_CLOSE, (event) => {
-    windowService.close(event.sender)
+    BrowserWindow.fromWebContents(event.sender)?.close()
   })
 
   ipcMain.on(IPC.WINDOW_TOGGLE_MAXIMIZE, (event) => {
-    windowService.toggleMaximize(event.sender)
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    // Fullscreen takes priority — if the user double-clicks the titlebar
+    // while in fullscreen we want to leave fullscreen, not toggle maximise
+    // underneath it.
+    if (win.isFullScreen()) {
+      win.setFullScreen(false)
+      return
+    }
+    if (win.isMaximized()) win.unmaximize()
+    else win.maximize()
   })
 
   ipcMain.on(IPC.WINDOW_TOGGLE_FULLSCREEN, (event) => {
-    windowService.toggleFullscreen(event.sender)
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (!win) return
+    win.setFullScreen(!win.isFullScreen())
   })
 
   ipcMain.handle(IPC.WINDOW_STATE_GET, (event): WindowState => {
-    return windowService.getWindowState(event.sender)
+    const win = BrowserWindow.fromWebContents(event.sender)
+    return {
+      isMaximized: win?.isMaximized() ?? false,
+      isFullscreen: win?.isFullScreen() ?? false,
+    }
   })
 
   ipcMain.on(IPC.SHELL_OPEN_EXTERNAL, async (_event, target: unknown) => {
@@ -233,39 +240,231 @@ export function registerIpcHandlers() {
 
   // --- MODS SYSTEM ---
 
-  ipcMain.handle(IPC.MODS_SCAN_ESSENTIALS, async () => {
-    return modController.scanEssentials()
+  ipcMain.handle(IPC.MODS_SCAN_ESSENTIALS, async (): Promise<EssentialsStatus> => {
+    const gameDir = getGameDir()
+    if (!gameDir) return { cleo: "missing", modloader: "missing", asiloader: "missing" }
+
+    // Ensure mods folder structure exists
+    const modsRoot = path.join(gameDir, "launcher_mods")
+    const categories = [
+      "essentials",
+      "graphics",
+      "performance",
+      "reality",
+      "audio",
+      "map",
+      "misc",
+      "vehicles",
+    ]
+
+    try {
+      if (!fs.existsSync(modsRoot)) await mkdir(modsRoot, { recursive: true })
+      for (const cat of categories) {
+        const catPath = path.join(modsRoot, cat)
+        if (!fs.existsSync(catPath)) await mkdir(catPath, { recursive: true })
+      }
+    } catch (err) {
+      log.error("Error creating mods folder structure:", err)
+    }
+
+    // Helper to check a specific mod by its files
+    const checkMod = (modId: string): ModStatus => {
+      const mod = MOD_CATALOG.find((m) => m.id === modId)
+      if (!mod) return "missing"
+
+      const results = mod.files.map((file) => {
+        const fullPath = resolveModPath(gameDir, file.destination, file.filename)
+        if (fs.existsSync(fullPath)) {
+          return file.isFolder
+            ? fs.statSync(fullPath).isDirectory()
+            : fs.statSync(fullPath).isFile()
+        }
+        return false
+      })
+
+      if (results.every((v) => v)) return "ok"
+      if (results.every((v) => !v)) return "missing"
+      return "reparar"
+    }
+
+    return {
+      cleo: checkMod("cleo"),
+      modloader: checkMod("modloader"),
+      asiloader: checkMod("asiloader"),
+    }
   })
 
   ipcMain.handle(IPC.MODS_SCAN_CATALOG, async () => {
-    return modController.scanCatalog()
+    const gameDir = getGameDir()
+    if (!gameDir) return {}
+
+    const results: Record<string, Record<string, boolean>> = {}
+    for (const mod of MOD_CATALOG) {
+      const fileStatus: Record<string, boolean> = {}
+      for (const file of mod.files) {
+        const fullPath = resolveModPath(gameDir, file.destination, file.filename)
+        if (fs.existsSync(fullPath)) {
+          fileStatus[file.filename] = file.isFolder
+            ? fs.statSync(fullPath).isDirectory()
+            : fs.statSync(fullPath).isFile()
+        } else {
+          fileStatus[file.filename] = false
+        }
+      }
+      results[mod.id] = fileStatus
+    }
+    return results
   })
 
   ipcMain.handle(IPC.MODS_SCAN_INSTALLED, async (_, files: ModFile[]) => {
-    return modVerifierService.scanInstalled(files)
+    const gameDir = getGameDir()
+    if (!gameDir) return {}
+    const result: Record<string, boolean> = {}
+
+    for (const file of files) {
+      const fullPath = resolveModPath(gameDir, file.destination, file.filename)
+      if (fs.existsSync(fullPath)) {
+        if (file.isFolder) {
+          result[file.filename] = fs.statSync(fullPath).isDirectory()
+        } else {
+          result[file.filename] = fs.statSync(fullPath).isFile()
+        }
+      } else {
+        result[file.filename] = false
+      }
+    }
+
+    return result
   })
 
-  ipcMain.handle(IPC.MODS_INSTALL, async (event, mod: Mod) => {
-    return modController.installMod(event, mod)
+  ipcMain.handle(IPC.MODS_INSTALL, async (event, mod: ModDefinition) => {
+    const gameDir = getGameDir()
+    if (!gameDir) throw new Error("No game directory found")
+
+    const repoPath = path.join(gameDir, "launcher_mods", mod.category)
+    if (!fs.existsSync(repoPath)) await mkdir(repoPath, { recursive: true })
+
+    const zipPath = path.join(repoPath, `${mod.id}.zip`)
+    const tempDir = path.join(os.tmpdir(), `sarp-extract-${mod.id}`)
+    const extractDir = path.join(tempDir, "extracted")
+
+    const sendProgress = (
+      status: InstallProgressEvent["status"],
+      progress: number,
+      error?: string,
+    ) => {
+      if (event.sender.isDestroyed()) return
+      event.sender.send(IPC.MODS_INSTALL_PROGRESS, {
+        modId: mod.id,
+        progress,
+        status,
+        error,
+      } as InstallProgressEvent)
+    }
+
+    try {
+      if (fs.existsSync(tempDir)) await rm(tempDir, { recursive: true, force: true })
+      await mkdir(tempDir, { recursive: true })
+      await mkdir(extractDir, { recursive: true })
+
+      // 1. Download
+      sendProgress("downloading", 0)
+      const response = await axios({
+        url: mod.downloadUrl,
+        method: "GET",
+        responseType: "stream",
+      })
+
+      const totalLength = parseInt(response.headers["content-length"]?.toString() || "0", 10)
+      let downloadedLength = 0
+
+      const writer = fs.createWriteStream(zipPath)
+      response.data.on("data", (chunk: Buffer) => {
+        downloadedLength += chunk.length
+        if (totalLength > 0) {
+          sendProgress("downloading", (downloadedLength / totalLength) * 100)
+        }
+      })
+
+      response.data.pipe(writer)
+
+      await new Promise<void>((resolve, reject) => {
+        writer.on("finish", () => resolve())
+        writer.on("error", (err) => reject(err))
+      })
+
+      // 2. Extract
+      sendProgress("extracting", 100)
+      await extract(zipPath, { dir: extractDir })
+
+      // 3. Copy
+      sendProgress("copying", 100)
+      for (const file of mod.files) {
+        const sourcePath = path.join(extractDir, file.filename)
+        const destPath = resolveModPath(gameDir, file.destination, file.filename)
+
+        if (fs.existsSync(sourcePath)) {
+          // Ensure parent directory exists
+          await mkdir(path.dirname(destPath), { recursive: true })
+          if (file.isFolder) {
+            if (fs.existsSync(destPath)) await rm(destPath, { recursive: true, force: true })
+            // Note: fs.cp is node 16.7+, Electron 33 is node 20.9+
+            await fs.promises.cp(sourcePath, destPath, { recursive: true })
+          } else {
+            await fs.promises.copyFile(sourcePath, destPath)
+          }
+        }
+      }
+
+      // 4. Save to store
+      const installedMods = (store.get("installedMods") as Record<string, InstalledModInfo>) || {}
+      installedMods[mod.id] = {
+        installedAt: new Date().toISOString(),
+        files: mod.files,
+        version: mod.version,
+        status: "ok",
+      }
+      store.set("installedMods", installedMods)
+
+      // 5. Cleanup
+      await rm(tempDir, { recursive: true, force: true })
+      sendProgress("done", 100)
+      log.info(`Mod installed: ${mod.name} (${mod.id})`)
+    } catch (error) {
+      log.error(`Error installing mod ${mod.id}:`, error)
+      sendProgress("error", 0)
+      throw error
+    }
   })
 
-  // Cancellation support
-  ipcMain.handle("mods:cancel-install", async (_event, modId: string) => {
-    return modController.cancelInstallation(_event, modId)
-  })
+  ipcMain.handle(IPC.MODS_UNINSTALL, async (_, mod: ModDefinition) => {
+    const gameDir = getGameDir()
+    if (!gameDir) return { success: false, error: "No game directory found" }
 
-  // --- UPDATES SYSTEM ---
-  ipcMain.handle("updates:check", async (event) => {
-    return updateController.checkForUpdates(event)
-  })
+    try {
+      const installedMods = store.get("installedMods") || {}
+      const info = (installedMods as Record<string, unknown>)[mod.id] as
+        | { files: ModFile[] }
+        | undefined
+      if (!info) return { success: false, error: "Mod not found in store" }
 
-  ipcMain.handle("updates:check-mod", async (event, modId: string) => {
-    return updateController.checkModUpdate(event, modId)
-  })
+      for (const file of info.files as ModFile[]) {
+        const fullPath = resolveModPath(gameDir, file.destination, file.filename)
+        if (fs.existsSync(fullPath)) {
+          await rm(fullPath, { recursive: true, force: true })
+        }
+      }
 
+      delete installedMods[mod.id]
+      store.set("installedMods", installedMods)
 
-  ipcMain.handle(IPC.MODS_UNINSTALL, async (event, modId: string) => {
-    return modController.uninstallMod(event, modId)
+      log.info(`Mod uninstalled: ${mod.id}`)
+      return { success: true }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      log.error(`Error uninstalling mod ${mod.id}:`, error)
+      return { success: false, error: msg }
+    }
   })
 
   // --- SYSTEM DEPENDENCIES ---

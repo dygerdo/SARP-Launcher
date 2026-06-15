@@ -1,12 +1,7 @@
 import { app, BrowserWindow } from "electron"
 import log from "electron-log"
-import pkg from "electron-updater"
-
+import { autoUpdater } from "electron-updater"
 import { IPC } from "../ipc/channels"
-
-// electron-updater is a CommonJS module, so the named `autoUpdater` export only
-// shows up on the default import when consumed from ESM TypeScript.
-const { autoUpdater } = pkg
 
 export interface UpdaterAvailable {
   version: string

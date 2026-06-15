@@ -38,6 +38,8 @@ export interface LauncherStoreSchema {
   /** Dictionary of installed mods by their ID. Stores installation date,
    *  file list, and version for uninstallation and updates. */
   installedMods: Record<string, StoreModInfo> | null
+  /** Last valid manifest fetched from the server. Used for offline mode. */
+  lastManifest: any | null
   /** Whether to hide the launcher to system tray while the game is running */
   minimizeToTray: boolean
 }
@@ -52,6 +54,7 @@ const store = new Store<LauncherStoreSchema>({
     installedCacheSize: null,
     windowState: null,
     installedMods: null,
+    lastManifest: null,
     minimizeToTray: false,
   },
 })
