@@ -1,33 +1,27 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue"
+import { onMounted, onUnmounted, computed } from "vue"
+import { useRouter } from "vue-router"
 import AppDialog from "@/components/dialog/AppDialog.vue"
-import AppLoader from "@/components/AppLoader.vue"
 import Toast from "primevue/toast"
 import { useUpdaterStore } from "@/stores/updater"
-import launcherOpenSfxUrl from "@/assets/sounds/gta-san-andreas-ah-shit-here-we-go-again.aac?url"
-import videoIntroUrl from "@/assets/video/video-main.mp4?url"
 
 const updaterStore = useUpdaterStore()
-const launcherOpenSound = new Audio(launcherOpenSfxUrl)
-launcherOpenSound.volume = 0.85
-const splashVisible = ref(true)
-const splashFadeOut = ref(false)
-const splashVideo = ref<HTMLVideoElement | null>(null)
+const router = useRouter()
 
-function handleSplashEnd() {
-  splashFadeOut.value = true
-  window.setTimeout(() => {
-    splashVisible.value = false
-  }, 650)
-}
+// Visual status for the mini indicator
+const isBusy = computed(() => 
+  updaterStore.status === "checking" || 
+  updaterStore.status === "downloading"
+)
 
-function handleVideoLoaded() {
-  const video = splashVideo.value
-  if (!video) return
-
-  void video.play().catch(() => {})
-  void launcherOpenSound.play().catch(() => {})
-}
+const statusLabel = computed(() => {
+  switch (updaterStore.status) {
+    case "checking": return "Buscando updates..."
+    case "downloading": return `Descargando (${Math.round(updaterStore.percent)}%)`
+    case "downloaded": return "Reiniciando..."
+    default: return ""
+  }
+})
 
 onMounted(() => {
   updaterStore.setupListeners()
@@ -39,75 +33,36 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!--
-    The splash video is shown first while the app loads in the background.
-    The loader only appears after the splash ends if the updater is still blocking.
-  -->
-  <Transition name="loader">
-    <AppLoader v-if="!splashVisible && updaterStore.isBlocking" />
-  </Transition>
-
+  <!-- Main View -->
   <RouterView />
+  
+  <!-- Global Overlay Components -->
   <AppDialog />
   <Toast />
 
-  <div
-    v-if="splashVisible"
-    :class="['splash-overlay', { 'splash-overlay--fade': splashFadeOut }]"
-  >
-    <video
-      ref="splashVideo"
-      class="splash-video"
-      :src="videoIntroUrl"
-      playsinline
-      muted
-      preload="auto"
-      @loadeddata="handleVideoLoaded"
-      @ended="handleSplashEnd"
-    ></video>
-    <div class="splash-fade-layer"></div>
-  </div>
+  <!-- Mini Update Indicator (Bottom-Right) -->
+  <Transition name="fade">
+    <div
+      v-if="isBusy"
+      v-tooltip.left="statusLabel"
+      class="fixed top-24 right-6 z-[99999] flex h-10 w-10 items-center justify-center rounded-full bg-[#111111]/90 shadow-[0_0_20px_rgba(0,0,0,0.8),0_0_15px_rgba(249,115,22,0.1)] backdrop-blur-xl border border-white/10 transition-transform active:scale-95"
+    >
+      <i class="pi pi-cog animate-spin text-orange-500 text-lg" />
+    </div>
+  </Transition>
 </template>
 
 <style scoped>
-/*
-  Fade-out for <Transition name="loader">.
-  Must live in the *parent* (here) because Vue applies transition classes
-  to the child's root element using the parent's scoped attribute.
-*/
-.loader-leave-active {
-  transition: opacity 300ms ease;
+.fade-enter-active,
+.fade-leave-active {
+  transition: all 0.5s cubic-bezier(0.165, 0.84, 0.44, 1);
 }
-.loader-leave-to {
+.fade-enter-from {
   opacity: 0;
+  transform: translateY(10px) scale(0.95);
 }
-
-.splash-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #000;
-  overflow: hidden;
-  opacity: 1;
-  transition: opacity 650ms ease;
-}
-
-.splash-overlay--fade {
+.fade-leave-to {
   opacity: 0;
+  transform: translateY(10px) scale(0.95);
 }
-
-.splash-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.splash-fade-layer {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.3));
-  pointer-events: none;
-}</style>
+</style>

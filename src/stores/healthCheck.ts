@@ -274,12 +274,16 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     }
   }
 
+  const initialized = ref(false)
+
   async function run(options: { force?: boolean } = {}): Promise<void> {
     // While the game is running every check (sha256-of-samp files, recursive
     // dir reads, manifest fetch) competes with the game for I/O and CPU.
     // Skip silently — the next on-game-close event re-runs us. The user can
     // still force a re-check via the refresh button.
-    if (gameRunning.value && !options.force) return
+    // BUG FIX: Allow the very first run to proceed even if the game is open,
+    // so we can at least resolve the gtaPath and recognize the folder.
+    if (gameRunning.value && !options.force && initialized.value) return
 
     running.value = true
     reset()
@@ -291,6 +295,7 @@ export const useHealthCheckStore = defineStore("healthCheck", () => {
     await serverPing.ping()
     syncServerEntry()
     running.value = false
+    initialized.value = true
 
     // Auto-trigger cache install/update only when GTA and SAMP are healthy,
     // and never while the game is running (a 700 MB download in parallel

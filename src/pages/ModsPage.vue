@@ -204,12 +204,19 @@ const confirmUninstall = (mod: ModDefinition) => {
             <StorePromo />
           </section>
 
-          <!-- Banner de dependencias — solo si hay críticas faltantes -->
-          <DepsBanner
-            :has-missing="store.hasCriticalMissing"
-            class="mb-4"
-            @open="depsDrawerOpen = true"
-          />
+          <!-- DEPENDENCIAS DE WINDOWS -->
+          <section class="flex flex-col gap-4">
+            <header class="flex items-center justify-between">
+              <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
+                Dependencias de Windows
+              </h2>
+              <span class="h-px flex-1 ml-4 bg-white/5" />
+            </header>
+            <DepsBanner
+              :has-missing="store.hasCriticalMissing"
+              @open="depsDrawerOpen = true"
+            />
+          </section>
 
           <!-- BARRA DE FILTROS -->
           <section class="py-2 bg-transparent">

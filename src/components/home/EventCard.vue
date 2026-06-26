@@ -13,8 +13,8 @@ defineEmits<{
 <template>
   <button
     type="button"
-    class="group relative flex shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.04] transition hover:border-white/25 hover:shadow-[0_8px_24px_rgba(0,0,0,0.45)]"
-    style="-webkit-app-region: no-drag; height: clamp(150px, 21.6vh, 240px); aspect-ratio: 9 / 16"
+    class="group relative flex shrink-0 snap-start flex-col overflow-hidden rounded-xl bg-white/[0.04] transition hover:bg-white/[0.07] hover:shadow-[0_20px_40px_rgba(0,0,0,0.5)]"
+    style="-webkit-app-region: no-drag; height: clamp(140px, 21vh, 220px); aspect-ratio: 9 / 16"
     @click="$emit('open', event)"
   >
     <div class="relative h-full w-full overflow-hidden bg-zinc-800">

@@ -44,22 +44,6 @@ const init = async () => {
   }
 
   document.documentElement.dataset.appMounted = "true"
-  const skeleton = document.getElementById("boot-skeleton")
-  if (skeleton) {
-    skeleton.addEventListener(
-      "transitionend",
-      () => {
-        skeleton.remove()
-      },
-      { once: true },
-    )
-    // Absolute fallback to ensure the app is never stuck behind the skeleton
-    setTimeout(() => {
-      if (document.body.contains(skeleton)) {
-        skeleton.remove()
-      }
-    }, 1500)
-  }
 }
 
 init()

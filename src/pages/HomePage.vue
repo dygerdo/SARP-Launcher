@@ -212,7 +212,7 @@ const isRepairing = computed(() => {
     </template>
 
     <!-- ═══ MAIN CONTENT ═══ -->
-    <div class="flex w-full max-w-2xl flex-col items-center gap-4 md:gap-6">
+    <div class="flex w-full max-w-2xl flex-col items-center gap-2 md:gap-3">
       <header class="flex items-center gap-5">
         <LogoMark size="md" />
         <div class="flex min-w-0 flex-col gap-1">
@@ -238,7 +238,7 @@ const isRepairing = computed(() => {
         </div>
       </header>
 
-      <div class="grid w-full grid-cols-[1fr_auto] items-stretch gap-3">
+      <div class="grid w-full grid-cols-[1fr_auto] items-stretch gap-2">
         <HealthCheckList />
         <PlayCard
           class="w-44"

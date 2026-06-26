@@ -148,7 +148,7 @@ const launcherApi = {
       ipcRenderer.invoke(IPC.MODS_SCAN_INSTALLED, files),
     scanCatalog: (): Promise<Record<string, Record<string, boolean>>> =>
       ipcRenderer.invoke(IPC.MODS_SCAN_CATALOG),
-    install: (mod: ModDefinition): Promise<void> => ipcRenderer.invoke(IPC.MODS_INSTALL, mod),
+    install: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke(IPC.MODS_INSTALL, mod),
     uninstall: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke(IPC.MODS_UNINSTALL, mod),
     onInstallProgress: (

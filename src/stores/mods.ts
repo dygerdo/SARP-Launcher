@@ -208,7 +208,12 @@ export const useModsStore = defineStore("mods", () => {
     installing.value[mod.id] = 0
     installStatus.value[mod.id] = "downloading"
     try {
-      await window.launcher.mods.install(mod)
+      const result = await window.launcher.mods.install(mod)
+      
+      if (!result.success) {
+        throw new Error(result.error ?? "No se ha podido descargar e instalar correctamente.")
+      }
+
       // Mark as installed in our state
       installedMods.value[mod.id] = {
         installedAt: new Date().toISOString(),
