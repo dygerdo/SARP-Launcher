@@ -315,8 +315,7 @@ const confirmUninstall = (mod: ModDefinition) => {
     transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .grid-swap-leave-active {
-  transition:
-    opacity 0.15s ease;
+  transition: opacity 0.15s ease;
 }
 .grid-swap-enter-from {
   opacity: 0;

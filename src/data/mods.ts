@@ -444,7 +444,8 @@ export const SYSTEM_DEPENDENCIES: SystemDependency[] = [
     name: "DirectX End-User Runtime (Jun 2010)",
     recommended: true,
     critical: true,
-    downloadUrl: "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe",
+    downloadUrl:
+      "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe",
     registryKey: [
       "HKLM\\SOFTWARE\\Microsoft\\DirectX\\Version",
       "HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\DirectX\\Version",

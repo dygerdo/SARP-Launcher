@@ -172,7 +172,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
     <div v-if="menuItems && menuItems.length > 0" class="flex flex-shrink-0 items-center">
       <button
         type="button"
-        class="settings-gear mt-1 flex h-7 w-7 items-center justify-center rounded-md border border-white/5 bg-transparent text-white/25 transition-all hover:border-orange-500/30 hover:bg-orange-500/5 hover:text-orange-400 active:scale-95"
+        class="mt-1 flex h-7 w-7 items-center justify-center text-white/25 transition-all hover:text-orange-400 active:scale-95"
         title="Opciones"
         @click="settingsVisible = true"
       >
@@ -193,115 +193,103 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
         }"
         :pt="{
           root: 'overflow-visible bg-transparent border-0 shadow-none',
-          content: 'p-0 bg-transparent overflow-visible',
+          content:
+            'p-0 bg-[#0e0e10] shadow-[0_32px_80px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.04)_inset,0_1px_0_rgba(255,255,255,0.08)_inset] rounded-2xl overflow-hidden',
           mask: 'backdrop-blur-sm bg-black/70',
         }"
       >
-        <div class="dialog-shell">
-          <!-- Ambient top glow -->
-          <div class="dialog-ambient" />
-
-          <!-- Header -->
-          <div class="dialog-header">
-            <div class="dialog-header-left">
-              <div class="dialog-icon-wrap">
-                <i class="pi pi-sliders-h dialog-icon" />
-              </div>
-              <div>
-                <p class="dialog-eyebrow">Ajustes</p>
-                <h2 class="dialog-title">{{ label }}</h2>
-              </div>
+        <!-- Header -->
+        <div class="dialog-header">
+          <div class="dialog-header-left">
+            <div>
+              <p class="dialog-eyebrow">Ajustes</p>
+              <h2 class="dialog-title">{{ label }}</h2>
             </div>
-            <button class="dialog-close" @click="settingsVisible = false">
-              <i class="pi pi-times" />
-            </button>
           </div>
+          <button class="dialog-close" @click="settingsVisible = false">
+            <i class="pi pi-times" />
+          </button>
+        </div>
 
-          <!-- Divider -->
-          <div class="dialog-divider" />
+        <!-- Divider -->
+        <div class="dialog-divider" />
 
-          <!-- Content -->
-          <div class="dialog-body">
-            <!-- Tray toggle (solo GTA) -->
-            <div v-if="label === 'GTA: San Andreas'" class="tray-section">
-              <p class="section-label">Comportamiento</p>
-              <div
-                class="tray-row"
-                :class="{ 'tray-row--active': minimizeToTray }"
-                @click.stop="onTrayOptionClick"
-              >
-                <div class="tray-checkbox-wrap">
-                  <Checkbox
-                    v-model="minimizeToTray"
-                    :binary="true"
-                    :pt="{
-                      box: ({ props: p }: any) => ({
-                        class: [
-                          'h-4 w-4 rounded border transition-all duration-300 flex items-center justify-center',
-                          p.modelValue
-                            ? 'bg-orange-500 border-orange-500 shadow-[0_0_12px_rgba(251,115,0,0.6)]'
-                            : 'border-slate-500 bg-slate-500/10',
-                        ],
-                      }),
-                      icon: 'text-[10px] text-slate-200 font-black',
-                    }"
-                    @click.stop
-                    @change="handleTrayChange"
-                  />
-                </div>
-                <div class="tray-text">
-                  <span class="tray-label">Ocultar al jugar</span>
-                  <span class="tray-desc">Minimiza el launcher a la bandeja del sistema</span>
-                </div>
-                <div class="tray-indicator" :class="{ 'tray-indicator--on': minimizeToTray }">
-                  {{ minimizeToTray ? "ON" : "OFF" }}
-                </div>
-              </div>
-            </div>
-
-            <!-- Separator if both sections exist -->
+        <!-- Content -->
+        <div class="dialog-body">
+          <!-- Tray toggle (solo GTA) -->
+          <div v-if="label === 'GTA: San Andreas'" class="tray-section">
+            <p class="section-label">Comportamiento</p>
             <div
-              v-if="label === 'GTA: San Andreas' && menuItems && menuItems.length"
-              class="section-sep"
-            />
-
-            <!-- Dynamic menu items -->
-            <div v-if="menuItems && menuItems.length" class="actions-section">
-              <p class="section-label">Acciones</p>
-              <div class="actions-list">
-                <button
-                  v-for="(item, index) in menuItems"
-                  :key="typeof item.label === 'string' ? item.label : index"
-                  class="action-row"
-                  :style="{
-                    '--row-bg': getMeta(item.label).color,
-                    '--row-glow': getMeta(item.label).glow,
+              class="tray-row"
+              :class="{ 'tray-row--active': minimizeToTray }"
+              @click.stop="onTrayOptionClick"
+            >
+              <div class="tray-checkbox-wrap">
+                <Checkbox
+                  v-model="minimizeToTray"
+                  :binary="true"
+                  :pt="{
+                    box: ({ props: p }: any) => ({
+                      class: [
+                        'h-4 w-4 rounded border transition-all duration-150 flex items-center justify-center',
+                        p.modelValue
+                          ? 'bg-orange-500 border-orange-500 shadow-[0_0_12px_rgba(251,115,0,0.6)]'
+                          : 'border-stone-500 bg-stone-500/20',
+                      ],
+                    }),
+                    icon: 'text-[10px] text-white/70 font-black',
                   }"
-                  @click="handleDynamicOptionClick(item)"
-                >
-                  <!-- Icon box -->
-                  <div class="action-icon-box">
-                    <i :class="[item.icon, 'action-icon-i']" />
-                  </div>
-                  <!-- Text -->
-                  <div class="action-text">
-                    <span class="action-label-text">{{
-                      typeof item.label === "string" ? item.label : ""
-                    }}</span>
-                    <span class="action-desc-text">{{ getMeta(item.label).desc }}</span>
-                  </div>
-                  <!-- Arrow -->
-                  <i class="pi pi-chevron-right action-arrow" />
-                </button>
+                  @click.stop
+                  @change="handleTrayChange"
+                />
+              </div>
+              <div class="tray-text">
+                <span class="tray-label">Ocultar al jugar</span>
+                <span class="tray-desc">Minimiza el launcher a la bandeja del sistema</span>
+              </div>
+              <div class="tray-indicator" :class="{ 'tray-indicator--on': minimizeToTray }">
+                {{ minimizeToTray ? "ON" : "OFF" }}
               </div>
             </div>
           </div>
 
-          <!-- Footer -->
-          <div class="dialog-footer">
-            <i class="pi pi-shield footer-shield" />
-            <span class="footer-text">Algunos cambios requieren permisos de administrador</span>
+          <!-- Separator if both sections exist -->
+          <div
+            v-if="label === 'GTA: San Andreas' && menuItems && menuItems.length"
+            class="section-sep"
+          />
+
+          <!-- Dynamic menu items -->
+          <div v-if="menuItems && menuItems.length" class="actions-section">
+            <p class="section-label">Acciones</p>
+            <div class="actions-list">
+              <button
+                v-for="(item, index) in menuItems"
+                :key="typeof item.label === 'string' ? item.label : index"
+                class="action-row"
+                :style="{
+                  '--row-bg': getMeta(item.label).color,
+                  '--row-glow': getMeta(item.label).glow,
+                }"
+                @click="handleDynamicOptionClick(item)"
+              >
+                <i v-if="item.icon" :class="[item.icon, 'action-icon-i']" />
+                <div class="action-text">
+                  <span class="action-label-text">{{
+                    typeof item.label === "string" ? item.label : ""
+                  }}</span>
+                  <span class="action-desc-text">{{ getMeta(item.label).desc }}</span>
+                </div>
+                <i class="pi pi-chevron-right action-arrow" />
+              </button>
+            </div>
           </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="dialog-footer">
+          <i class="pi pi-info-circle footer-shield" />
+          <span class="footer-text">Algunos cambios requieren permisos de administrador</span>
         </div>
       </Dialog>
     </div>
@@ -385,43 +373,6 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   font-family: "DM Sans", sans-serif;
 }
 
-.settings-gear {
-  transition:
-    color 0.2s,
-    border-color 0.2s,
-    background 0.2s;
-}
-.settings-gear:hover {
-}
-
-/* ══════════════════════════════════
-   DIALOG SHELL
-══════════════════════════════════ */
-.dialog-shell {
-  position: relative;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  background: #0e0e10;
-  overflow: hidden;
-  font-family: "DM Sans", sans-serif;
-  box-shadow:
-    0 32px 80px rgba(0, 0, 0, 0.7),
-    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
-    0 1px 0 rgba(255, 255, 255, 0.08) inset;
-}
-
-/* Top ambient glow */
-.dialog-ambient {
-  position: absolute;
-  top: -60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 280px;
-  height: 120px;
-  background: radial-gradient(ellipse, rgba(251, 115, 0, 0.12) 0%, transparent 70%);
-  pointer-events: none;
-}
-
 /* ── Header ── */
 .dialog-header {
   display: flex;
@@ -434,23 +385,6 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.dialog-icon-wrap {
-  width: 36px;
-  height: 36px;
-  border-radius: 9px;
-  border: 1px solid rgba(251, 115, 0, 0.2);
-  background: rgba(251, 115, 0, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.dialog-icon {
-  font-size: 14px;
-  color: rgba(251, 115, 0, 0.8);
 }
 
 .dialog-eyebrow {
@@ -634,32 +568,15 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   transform: translateX(2px) scale(0.99);
 }
 
-.action-icon-box {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
-
-.action-row:hover .action-icon-box {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
 .action-icon-i {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
   transition: color 0.2s;
 }
 
 .action-row:hover .action-icon-i {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .action-text {
@@ -709,7 +626,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 
 .footer-shield {
   font-size: 10px;
-  color: rgba(251, 115, 0, 0.25);
+  color: rgba(255, 255, 255, 0.15);
 }
 
 .footer-text {

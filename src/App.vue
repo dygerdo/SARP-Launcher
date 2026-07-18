@@ -8,6 +8,20 @@ import { useUpdaterStore } from "@/stores/updater"
 const updaterStore = useUpdaterStore()
 const router = useRouter()
 
+const SECRET_SEQUENCE = "sarpadmin"
+const keyBuffer: string[] = []
+
+function handleKeyDown(e: KeyboardEvent) {
+  if (e.ctrlKey || e.altKey || e.metaKey) return
+  if (e.key.length !== 1) return
+  keyBuffer.push(e.key.toLowerCase())
+  if (keyBuffer.length > SECRET_SEQUENCE.length) keyBuffer.shift()
+  if (keyBuffer.join("") === SECRET_SEQUENCE) {
+    keyBuffer.length = 0
+    router.push("/admin")
+  }
+}
+
 // Visual status for the mini indicator
 const isBusy = computed(
   () => updaterStore.status === "checking" || updaterStore.status === "downloading",
@@ -28,10 +42,12 @@ const statusLabel = computed(() => {
 
 onMounted(() => {
   updaterStore.setupListeners()
+  window.addEventListener("keydown", handleKeyDown)
 })
 
 onUnmounted(() => {
   updaterStore.cleanup()
+  window.removeEventListener("keydown", handleKeyDown)
 })
 </script>
 

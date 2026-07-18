@@ -39,8 +39,6 @@ const missingEssentials = computed(() => {
     })
 })
 
-
-
 function openDetails() {
   store.selectedMod = props.mod
 }

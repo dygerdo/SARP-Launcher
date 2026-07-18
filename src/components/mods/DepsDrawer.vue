@@ -27,7 +27,7 @@
         </button>
       </header>
 
-      <div class="h-px mx-5" style="background: rgba(128,128,128,0.2)" />
+      <div class="h-px mx-5" style="background: rgba(128, 128, 128, 0.2)" />
 
       <div class="flex-1 overflow-y-auto py-3 scrollbar-thin">
         <section v-for="group in GROUPS" :key="group" class="px-5 pb-4">
@@ -48,18 +48,22 @@
                   {{ dep.name }}
                   <template v-if="dep.critical">
                     <span class="text-white/15"> · </span>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-orange-400/80">Requerida</span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-orange-400/80"
+                      >Requerida</span
+                    >
                   </template>
                   <template v-else-if="dep.recommended">
                     <span class="text-white/15"> · </span>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-orange-400/30">Recomendada</span>
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-orange-400/30"
+                      >Recomendada</span
+                    >
                   </template>
                 </span>
               </div>
 
               <button
                 class="shrink-0 rounded-md px-2.5 py-1 text-[10px] font-semibold text-white/25 transition-all hover:bg-orange-500/5 hover:text-orange-400"
-                style="border: 1px solid rgba(128,128,128,0.5)"
+                style="border: 1px solid rgba(128, 128, 128, 0.5)"
                 @click="store.openDepUrl(dep.downloadUrl)"
               >
                 Instalar
@@ -117,7 +121,6 @@ function toggleGroup(group: DepGroup) {
   next.has(group) ? next.delete(group) : next.add(group)
   expandedGroups.value = next
 }
-
 </script>
 
 <style scoped>
