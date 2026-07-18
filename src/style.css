@@ -168,6 +168,12 @@ textarea,
   transition: all 0.2s !important;
 }
 
+/* Kill default PrimeVue button borders — we control them per-component */
+.p-button {
+  --p-button-secondary-border-color: transparent;
+  --p-button-outlined-border-color: transparent;
+}
+
 /* Primary buttons in dialogs */
 .p-dialog-footer .p-button:not(.p-button-secondary):not(.p-button-outlined) {
   background: #f97316 !important;

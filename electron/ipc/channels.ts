@@ -40,6 +40,9 @@ export const IPC = {
   MODS_INSTALL: "mods:install",
   MODS_UNINSTALL: "mods:uninstall",
   MODS_INSTALL_PROGRESS: "mods:install-progress",
+  MODS_CANCEL_INSTALL: "mods:cancel-install",
+  UPDATES_CHECK: "updates:check",
+  UPDATES_CHECK_MOD: "updates:check-mod",
   SECURITY_ALERT: "security:alert",
 } as const
 

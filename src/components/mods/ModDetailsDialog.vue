@@ -60,99 +60,102 @@ function handleUninstall() {
     dismissable-mask
     :header="mod?.name || 'Detalles del Mod'"
     :pt="{
-      root: { class: '!rounded-none !border-[#222] !bg-[#090909] !max-w-md !w-[90vw]' },
-      header: { class: '!bg-[#0d0d0d] !border-b !border-[#1a1a1a] !px-5 !py-4' },
-      headerTitle: { class: '!text-sm !font-bold !uppercase !tracking-widest !text-white' },
-      closeButton: { class: '!text-white/30 hover:!bg-white/5 !rounded-none' },
-      content: { class: '!bg-[#090909] !px-5 !py-5' },
+      root: {
+        class:
+          '!rounded-2xl !bg-[#0e0e10] !max-w-lg !w-[90vw] !shadow-[0_32px_80px_rgba(0,0,0,0.7)]',
+      },
+      header: { class: '!bg-[#111113] !rounded-t-2xl !px-5 !py-4' },
+      headerTitle: { class: '!text-sm !font-bold !uppercase !tracking-widest !text-white/90' },
+      closeButton: { class: '!text-white/30 hover:!bg-white/5 !rounded-lg' },
+      content: { class: '!bg-[#0e0e10] !px-5 !py-5 !rounded-b-2xl' },
     }"
   >
     <div v-if="mod" class="flex flex-col gap-5">
-      <!-- Meta row -->
-      <div class="flex items-center gap-3">
-        <span class="border border-[#222] bg-[#111] px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-[#555]">
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <span
+          class="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-400/80 bg-orange-500/8 rounded-md"
+        >
           {{ categoryLabels[mod.category] ?? mod.category }}
         </span>
-        <span class="text-[9px] font-mono text-[#333] uppercase tracking-wider">v{{ mod.version }}</span>
-        <span class="ml-auto text-[9px] font-mono text-[#333]">{{ mod.id }}</span>
+        <span class="text-[10px] font-mono text-white/25">v{{ mod.version }}</span>
+        <span class="ml-auto text-[10px] font-mono text-white/15">{{ mod.id }}</span>
       </div>
 
-      <!-- Description -->
-      <p class="text-xs leading-relaxed text-[#888]">{{ mod.description }}</p>
+      <div class="rounded-xl bg-white/[0.02] p-4">
+        <p class="text-[11px] leading-relaxed text-white/50">{{ mod.description }}</p>
+      </div>
 
-      <!-- Repair notice -->
-      <div
-        v-if="isPartial"
-        class="border border-rose-900/50 bg-rose-900/10 p-3 flex gap-2 items-start"
-      >
-        <i class="pi pi-exclamation-triangle text-rose-500 text-xs mt-0.5 shrink-0" />
+      <div v-if="isPartial" class="flex gap-2.5 items-start p-3 rounded-xl bg-rose-500/8">
+        <i class="pi pi-exclamation-triangle text-rose-400 text-xs mt-0.5 shrink-0" />
         <p class="text-[11px] text-rose-300/80 leading-snug">
           Archivos faltantes detectados. La reparación reinstalará los componentes necesarios.
         </p>
       </div>
 
-      <!-- Dependencies -->
       <div v-if="mod.dependsOn && mod.dependsOn.length > 0" class="flex flex-col gap-2">
-        <span class="text-[9px] font-bold uppercase tracking-widest text-[#444]">Dependencias</span>
+        <span class="text-[10px] font-semibold uppercase tracking-wider text-white/25"
+          >Dependencias</span
+        >
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="dep in mod.dependsOn"
             :key="dep"
-            class="border border-[#222] bg-[#111] px-2 py-0.5 text-[9px] font-mono text-[#666]"
+            class="px-2 py-0.5 text-[10px] font-mono text-white/35 bg-white/[0.04] rounded-md"
           >
             {{ dep }}
           </span>
         </div>
       </div>
 
-      <!-- Files list -->
       <div class="flex flex-col gap-2">
-        <span class="text-[9px] font-bold uppercase tracking-widest text-[#444]">Archivos</span>
-        <div class="flex flex-col gap-1">
+        <span class="text-[10px] font-semibold uppercase tracking-wider text-white/25"
+          >Archivos incluidos</span
+        >
+        <div class="rounded-xl bg-white/[0.02] divide-y divide-white/5">
           <div
             v-for="file in mod.files"
             :key="file.filename"
-            class="flex items-center gap-2 border-b border-[#111] pb-1"
+            class="flex items-center gap-2.5 px-3 py-2"
           >
-            <i class="pi pi-file text-[10px] text-[#444]" />
-            <span class="text-[10px] font-mono text-[#666]">{{ file.filename }}</span>
+            <i class="pi pi-file text-[11px] text-white/20" />
+            <span class="text-[11px] font-mono text-white/35">{{ file.filename }}</span>
           </div>
         </div>
       </div>
 
-      <!-- Actions -->
-      <div class="border-t border-[#111] pt-4 flex gap-2">
-        <!-- Installing progress -->
+      <div class="pt-4 flex gap-2">
         <template v-if="isInstalling">
-          <div class="relative flex-1 h-9 border border-orange-500/20 bg-orange-500/5 overflow-hidden">
+          <div class="relative flex-1 h-9 bg-orange-500/5 overflow-hidden rounded-xl">
             <div
               class="absolute left-0 top-0 h-full bg-orange-500/20 transition-[width] duration-300"
               :style="{ width: `${progress}%` }"
             />
-            <div class="absolute inset-0 flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-orange-400">
+            <div
+              class="absolute inset-0 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-wider text-orange-400"
+            >
               <i class="pi pi-spinner animate-spin" />
               <span>{{ Math.round(progress) }}%</span>
             </div>
           </div>
         </template>
         <template v-else>
-          <!-- Install / Repair -->
           <button
             v-if="!isInstalled || isPartial"
-            class="flex-1 h-9 border text-[10px] font-bold uppercase tracking-widest transition-colors"
-            :class="isPartial
-              ? 'border-rose-900 bg-rose-900/10 text-rose-400 hover:bg-rose-900/20'
-              : 'border-[#222] bg-[#111] text-[#aaa] hover:border-orange-500 hover:text-orange-500 disabled:border-[#111] disabled:text-[#333]'"
+            class="flex-1 h-9 rounded-xl text-xs font-semibold uppercase tracking-wider transition-all duration-200"
+            :class="
+              isPartial
+                ? 'bg-rose-500/10 text-rose-400 hover:bg-rose-500/15'
+                : 'bg-white/[0.04] text-white/70 hover:bg-orange-500/10 hover:text-orange-400 hover:shadow-[0_0_16px_rgba(251,115,0,0.15)] disabled:bg-white/[0.02] disabled:text-white/20'
+            "
             :disabled="!isPartial && !canInstall"
             @click="handleInstall"
           >
             {{ isPartial ? "REPARAR" : "INSTALAR" }}
           </button>
 
-          <!-- Uninstall -->
           <button
             v-if="isInstalled"
-            class="flex-1 h-9 border border-[#222] bg-transparent text-[10px] font-bold uppercase tracking-widest text-[#666] hover:border-red-900 hover:text-red-500 transition-colors"
+            class="flex-1 h-9 rounded-xl bg-transparent text-xs font-semibold uppercase tracking-wider text-white/35 transition-colors hover:bg-rose-500/10 hover:text-rose-400"
             @click="handleUninstall"
           >
             DESINSTALAR
@@ -160,7 +163,7 @@ function handleUninstall() {
         </template>
 
         <button
-          class="h-9 px-4 border border-[#1f1f1f] text-[10px] font-bold uppercase tracking-widest text-[#555] hover:text-[#aaa] transition-colors"
+          class="h-9 px-4 rounded-xl bg-transparent text-xs font-semibold uppercase tracking-wider text-white/30 transition-colors hover:text-white/60"
           @click="visible = false"
         >
           CERRAR

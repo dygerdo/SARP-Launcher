@@ -1,10 +1,10 @@
-import { app } from "electron";
+import { app } from "electron"
 
 export class AppService {
   /**
    * Returns the current application version.
    */
   public getVersion(): string {
-    return app.getVersion();
+    return app.getVersion()
   }
 }

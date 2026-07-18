@@ -11,170 +11,66 @@ function openModSubmit() {
 </script>
 
 <template>
-  <div class="promo-wrapper">
-    <!-- CARD: TIENDA -->
-    <div class="promo-card card-store" @click="openStore">
-      <div class="card-tag">EXCLUSIVO</div>
-      <div class="card-body">
-        <div class="card-text">
-          <p class="card-eyebrow">Tienda SARP</p>
-          <h3 class="card-title">TIENDA OFICIAL</h3>
-          <p class="card-desc">
-            Skins, prendas y mejoras de cuenta exclusivas. Apoya el desarrollo del servidor.
+  <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div
+      class="group relative flex flex-col gap-4 p-5 rounded-xl bg-white/[0.03] cursor-pointer transition-all duration-300 hover:bg-white/[0.05] overflow-hidden"
+      @click="openStore"
+    >
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      />
+
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-shopping-bag text-sm text-orange-400/70" />
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-orange-400/70">
+            ¡CJ recomienda visitar la tienda!
           </p>
         </div>
-        <button class="cta-btn cta-btn--store" @click.stop="openStore">
-          VISITAR TIENDA
-          <i class="pi pi-arrow-right" />
-        </button>
+        <h3 class="text-base font-bold uppercase tracking-wide text-white/90">TIENDA SARP</h3>
+        <p class="text-xs leading-relaxed text-white/40">
+          Encuentra los mejores descuentos del momento.
+        </p>
       </div>
+
+      <button
+        class="inline-flex items-center gap-2 w-fit px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl bg-orange-500 border border-orange-500 text-black transition-all duration-200 hover:bg-orange-400 hover:border-orange-400 hover:shadow-[0_0_20px_rgba(251,115,0,0.3)]"
+        @click.stop="openStore"
+      >
+        VISITAR TIENDA
+        <i class="pi pi-arrow-right text-[9px]" />
+      </button>
     </div>
 
-    <!-- CARD: SUBMIT MOD -->
-    <div class="promo-card card-mods" @click="openModSubmit">
-      <div class="card-body">
-        <div class="card-text">
-          <p class="card-eyebrow card-eyebrow--muted">Registro de Mods</p>
-          <h3 class="card-title card-title--muted">PROPONER MOD</h3>
-          <p class="card-desc">
-            ¿Tu mod no aparece? Envíalo a revisión. Si cumple los estándares, lo añadimos
-            oficialmente.
+    <div
+      class="group relative flex flex-col gap-4 p-5 rounded-xl bg-white/[0.03] cursor-pointer transition-all duration-300 hover:bg-white/[0.05] overflow-hidden"
+      @click="openModSubmit"
+    >
+      <div
+        class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+      />
+
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center gap-2">
+          <i class="pi pi-file-edit text-sm text-white/30" />
+          <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+            Registro de Mods
           </p>
         </div>
-        <button class="cta-btn cta-btn--mods" @click.stop="openModSubmit">
-          ENVIAR MOD
-          <i class="pi pi-arrow-right" />
-        </button>
+        <h3 class="text-base font-bold uppercase tracking-wide text-white/60">PROPONER MOD</h3>
+        <p class="text-xs leading-relaxed text-white/40">
+          ¿Tu mod no aparece? Envíalo a revisión. Si cumple los estándares, lo añadimos
+          oficialmente.
+        </p>
       </div>
+
+      <button
+        class="inline-flex items-center gap-2 w-fit px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xl bg-white/[0.04] text-white/45 transition-all duration-200 hover:bg-white/[0.06] hover:text-white/70"
+        @click.stop="openModSubmit"
+      >
+        ENVIAR MOD
+        <i class="pi pi-arrow-right text-[9px]" />
+      </button>
     </div>
   </div>
 </template>
-
-<style scoped>
-.promo-wrapper {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-@media (max-width: 640px) {
-  .promo-wrapper {
-    grid-template-columns: 1fr;
-  }
-}
-
-.promo-card {
-  position: relative;
-  border: 1px solid #1f1f1f;
-  background: #090909;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-  overflow: hidden;
-}
-
-.promo-card:hover {
-  background: #0c0c0c;
-}
-
-.card-store {
-  border-left: 2px solid #f97316;
-}
-
-.card-store:hover {
-  border-color: #f97316;
-}
-
-.card-mods:hover {
-  border-color: #333;
-}
-
-.card-tag {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: #f97316;
-  color: #000;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.15em;
-  padding: 3px 10px;
-}
-
-.card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 18px 16px;
-}
-
-.card-eyebrow {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: #f97316;
-  margin: 0 0 6px;
-}
-
-.card-eyebrow--muted {
-  color: #555;
-}
-
-.card-title {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: #fff;
-  margin: 0 0 8px;
-  line-height: 1;
-}
-
-.card-title--muted {
-  color: #aaa;
-}
-
-.card-desc {
-  font-size: 11px;
-  line-height: 1.55;
-  color: #555;
-  margin: 0;
-}
-
-.cta-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  border: 1px solid;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s;
-  width: fit-content;
-}
-
-.cta-btn--store {
-  background: #f97316;
-  border-color: #f97316;
-  color: #000;
-}
-
-.cta-btn--store:hover {
-  background: #ea6a08;
-  border-color: #ea6a08;
-}
-
-.cta-btn--mods {
-  background: transparent;
-  border-color: #222;
-  color: #666;
-}
-
-.cta-btn--mods:hover {
-  border-color: #444;
-  color: #aaa;
-}
-</style>

@@ -35,38 +35,45 @@ const types: { label: string; value: ModType | "all" }[] = [
 </script>
 
 <template>
-  <div class="filters-bar">
-    <!-- Search -->
-    <div class="search-wrap">
-      <i class="pi pi-search search-icon" />
+  <div class="flex flex-col gap-3">
+    <div class="relative">
+      <i
+        class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-sm text-white/25 pointer-events-none"
+      />
       <input
         v-model="localSearch"
         type="text"
-        placeholder="BUSCAR MODS..."
-        class="search-input"
+        placeholder="Buscar mods..."
+        class="w-full h-10 pl-10 pr-4 rounded-xl bg-white/[0.03] text-sm text-white placeholder:text-white/25 outline-none transition-colors focus:bg-white/[0.05]"
       />
     </div>
 
-    <!-- Category chips -->
-    <div class="chips">
+    <div class="flex flex-wrap gap-1.5">
       <button
         v-for="cat in categories"
         :key="cat.value"
-        class="chip"
-        :class="{ 'chip--active': store.selectedCategory === cat.value }"
+        class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors"
+        :class="
+          store.selectedCategory === cat.value
+            ? 'bg-orange-500 text-black'
+            : 'bg-white/[0.04] text-white/40 hover:bg-white/[0.06] hover:text-white/70'
+        "
         @click="store.selectedCategory = cat.value"
       >
         {{ cat.label }}
       </button>
     </div>
 
-    <!-- Type chips -->
-    <div class="chips">
+    <div class="flex flex-wrap gap-1.5">
       <button
         v-for="typ in types"
         :key="typ.value"
-        class="chip chip--type"
-        :class="{ 'chip--active': store.selectedType === typ.value }"
+        class="px-3 py-1.5 rounded-lg text-xs font-medium font-mono transition-colors"
+        :class="
+          store.selectedType === typ.value
+            ? 'bg-orange-500 text-black'
+            : 'bg-white/[0.04] text-white/40 hover:bg-white/[0.06] hover:text-white/70'
+        "
         @click="store.selectedType = typ.value"
       >
         {{ typ.label }}
@@ -74,82 +81,3 @@ const types: { label: string; value: ModType | "all" }[] = [
     </div>
   </div>
 </template>
-
-<style scoped>
-.filters-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.search-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  font-size: 12px;
-  color: #444;
-  pointer-events: none;
-}
-
-.search-input {
-  width: 100%;
-  height: 36px;
-  padding: 0 12px 0 36px;
-  background: #090909;
-  border: 1px solid #1f1f1f;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.search-input::placeholder {
-  color: #333;
-}
-
-.search-input:focus {
-  border-color: #333;
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.chip {
-  padding: 4px 10px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: transparent;
-  border: 1px solid #1f1f1f;
-  color: #444;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-}
-
-.chip:hover {
-  border-color: #333;
-  color: #aaa;
-}
-
-.chip--active {
-  background: #f97316;
-  border-color: #f97316;
-  color: #000;
-}
-
-.chip--type {
-  font-family: monospace;
-}
-</style>

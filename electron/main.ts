@@ -43,11 +43,10 @@ app.commandLine.appendSwitch("log-level", "3")
 app.commandLine.appendSwitch("disable-http-cache")
 
 // Robust __dirname and path resolution
-// In CommonJS (Electron default), __dirname is global. 
+// In CommonJS (Electron default), __dirname is global.
 // In ESM, we use import.meta.url.
-const _dirname = typeof __dirname !== 'undefined' 
-  ? __dirname 
-  : path.dirname(fileURLToPath(import.meta.url));
+const _dirname =
+  typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 
 const APP_ROOT = path.join(_dirname, "..")
 process.env.APP_ROOT = APP_ROOT
@@ -56,7 +55,7 @@ const RENDERER_DIST = path.join(APP_ROOT, "dist")
 
 // Validate critical environment variables
 if (!process.env.VITE_CDN_URL && app.isPackaged) {
-  log.warn("VITE_CDN_URL is not defined. Manifest features may fail.");
+  log.warn("VITE_CDN_URL is not defined. Manifest features may fail.")
 }
 
 // Robust icon resolution

@@ -1,5 +1,5 @@
-import store from "../services/store";
-import type { LauncherStoreSchema } from "../services/store";
+import store from "../services/store"
+import type { LauncherStoreSchema } from "../services/store"
 
 /**
  * ConfigRepository handles persistence logic.
@@ -8,21 +8,21 @@ import type { LauncherStoreSchema } from "../services/store";
  */
 export class ConfigRepository {
   public get<K extends keyof LauncherStoreSchema>(key: K): LauncherStoreSchema[K] {
-    return store.get(key);
+    return store.get(key)
   }
 
   public set<K extends keyof LauncherStoreSchema>(key: K, value: LauncherStoreSchema[K]): void {
-    store.set(key, value as any);
+    store.set(key, value as any)
   }
 
   public has(key: string): boolean {
-    return store.has(key as any);
+    return store.has(key as any)
   }
 
   /**
    * Returns a copy of the entire store for migration or inspection.
    */
   public getAll(): LauncherStoreSchema {
-    return store.store as LauncherStoreSchema;
+    return store.store as LauncherStoreSchema
   }
 }

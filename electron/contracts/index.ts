@@ -4,24 +4,24 @@
  */
 
 export interface IAppVersionContract {
-  version: string;
+  version: string
 }
 
 export interface IWindowStateContract {
-  isMaximized: boolean;
-  isFullscreen: boolean;
+  isMaximized: boolean
+  isFullscreen: boolean
 }
 
 export interface IStoreSetContract<T = any> {
-  key: string;
-  value: T;
+  key: string
+  value: T
 }
 
 // Re-export core types from channels for now to avoid breaking changes
-export type { 
-  GameStatus, 
-  CdnResponse, 
+export type {
+  GameStatus,
+  CdnResponse,
   HealthCheckPayload,
   GameLaunchPayload,
-  GameLaunchResult
-} from "../ipc/channels";
+  GameLaunchResult,
+} from "../ipc/channels"

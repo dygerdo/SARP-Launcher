@@ -13,10 +13,10 @@ const iconMap: Record<ToastType, string> = {
 }
 
 const colorMap: Record<ToastType, string> = {
-  install: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-  uninstall: "text-rose-400 border-rose-500/30 bg-rose-500/10",
-  repair: "text-amber-400 border-amber-500/30 bg-amber-500/10",
-  error: "text-rose-300 border-rose-500/30 bg-rose-500/10",
+  install: "text-emerald-400 bg-emerald-500/10",
+  uninstall: "text-rose-400 bg-rose-500/10",
+  repair: "text-amber-400 bg-amber-500/10",
+  error: "text-rose-300 bg-rose-500/10",
 }
 
 const items = computed(() => store.toastItems)
@@ -32,7 +32,7 @@ const items = computed(() => store.toastItems)
         <div
           v-for="item in items"
           :key="item.id"
-          class="flex items-center gap-2.5 rounded-lg border px-3.5 py-2.5 shadow-lg backdrop-blur-sm pointer-events-auto"
+          class="flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 shadow-lg backdrop-blur-sm pointer-events-auto"
           :class="colorMap[item.type]"
         >
           <i :class="`pi ${iconMap[item.type]} text-sm shrink-0`" />

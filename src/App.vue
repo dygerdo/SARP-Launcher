@@ -9,17 +9,20 @@ const updaterStore = useUpdaterStore()
 const router = useRouter()
 
 // Visual status for the mini indicator
-const isBusy = computed(() => 
-  updaterStore.status === "checking" || 
-  updaterStore.status === "downloading"
+const isBusy = computed(
+  () => updaterStore.status === "checking" || updaterStore.status === "downloading",
 )
 
 const statusLabel = computed(() => {
   switch (updaterStore.status) {
-    case "checking": return "Buscando updates..."
-    case "downloading": return `Descargando (${Math.round(updaterStore.percent)}%)`
-    case "downloaded": return "Reiniciando..."
-    default: return ""
+    case "checking":
+      return "Buscando updates..."
+    case "downloading":
+      return `Descargando (${Math.round(updaterStore.percent)}%)`
+    case "downloaded":
+      return "Reiniciando..."
+    default:
+      return ""
   }
 })
 
@@ -35,7 +38,7 @@ onUnmounted(() => {
 <template>
   <!-- Main View -->
   <RouterView />
-  
+
   <!-- Global Overlay Components -->
   <AppDialog />
   <Toast />

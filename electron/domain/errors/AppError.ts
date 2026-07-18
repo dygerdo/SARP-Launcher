@@ -10,15 +10,15 @@ export enum ErrorCode {
 }
 
 export class AppError extends Error {
-  public readonly code: ErrorCode;
-  public readonly details?: any;
+  public readonly code: ErrorCode
+  public readonly details?: any
 
   constructor(code: ErrorCode, message: string, details?: any) {
-    super(message);
-    this.name = "AppError";
-    this.code = code;
-    this.details = details;
-    Object.setPrototypeOf(this, AppError.prototype);
+    super(message)
+    this.name = "AppError"
+    this.code = code
+    this.details = details
+    Object.setPrototypeOf(this, AppError.prototype)
   }
 
   public toJSON() {
@@ -27,6 +27,6 @@ export class AppError extends Error {
       code: this.code,
       message: this.message,
       details: this.details,
-    };
+    }
   }
 }

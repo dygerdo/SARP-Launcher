@@ -60,19 +60,26 @@ function handleDynamicOptionClick(item: MenuItem) {
 
 const icon = computed(() => {
   switch (props.state) {
-    case "ok": return "pi-check-circle"
-    case "warning": return "pi-info-circle"
-    case "error": return "pi-times-circle"
+    case "ok":
+      return "pi-check-circle"
+    case "warning":
+      return "pi-info-circle"
+    case "error":
+      return "pi-times-circle"
   }
   return "pi-circle"
 })
 
 const color = computed(() => {
   switch (props.state) {
-    case "checking": return "text-white/40"
-    case "ok": return "text-emerald-400"
-    case "warning": return "text-amber-400"
-    case "error": return "text-rose-400"
+    case "checking":
+      return "text-white/40"
+    case "ok":
+      return "text-emerald-400"
+    case "warning":
+      return "text-amber-400"
+    case "error":
+      return "text-rose-400"
   }
   return "text-white/40"
 })
@@ -95,10 +102,10 @@ const actionButtonClass = computed(() => {
 })
 
 const actionProgressTrackClass = computed(() =>
-  actionVariant.value === "secondary" ? "bg-white/10" : "bg-black/20"
+  actionVariant.value === "secondary" ? "bg-white/10" : "bg-black/20",
 )
 const actionProgressFillClass = computed(() =>
-  actionVariant.value === "secondary" ? "bg-white/70" : "bg-black/60"
+  actionVariant.value === "secondary" ? "bg-white/70" : "bg-black/60",
 )
 
 // Metadata enriquecida para cada opción del menú
@@ -122,11 +129,13 @@ const menuMeta: Record<string, { desc: string; color: string; glow: string }> = 
 
 function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   const key = typeof label === "string" ? label : ""
-  return menuMeta[key] ?? {
-    desc: "Acción del sistema",
-    color: "rgba(255,255,255,0.03)",
-    glow: "rgba(255,255,255,0.08)",
-  }
+  return (
+    menuMeta[key] ?? {
+      desc: "Acción del sistema",
+      color: "rgba(255,255,255,0.03)",
+      glow: "rgba(255,255,255,0.08)",
+    }
+  )
 }
 </script>
 
@@ -149,7 +158,12 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
         >
           {{ subline.text }}
         </span>
-        <span v-else-if="reserveSublineSpace" class="block w-full text-xs leading-snug" aria-hidden="true">&nbsp;</span>
+        <span
+          v-else-if="reserveSublineSpace"
+          class="block w-full text-xs leading-snug"
+          aria-hidden="true"
+          >&nbsp;</span
+        >
         <slot name="extras" />
       </div>
     </div>
@@ -170,7 +184,13 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
         v-model:visible="settingsVisible"
         modal
         :show-header="false"
-        :style="{ width: '400px', padding: 0, background: 'transparent', border: 'none', boxShadow: 'none' }"
+        :style="{
+          width: '400px',
+          padding: 0,
+          background: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+        }"
         :pt="{
           root: 'overflow-visible bg-transparent border-0 shadow-none',
           content: 'p-0 bg-transparent overflow-visible',
@@ -202,7 +222,6 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 
           <!-- Content -->
           <div class="dialog-body">
-
             <!-- Tray toggle (solo GTA) -->
             <div v-if="label === 'GTA: San Andreas'" class="tray-section">
               <p class="section-label">Comportamiento</p>
@@ -215,7 +234,6 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                   <Checkbox
                     v-model="minimizeToTray"
                     :binary="true"
-                    @click.stop
                     :pt="{
                       box: ({ props: p }: any) => ({
                         class: [
@@ -227,6 +245,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                       }),
                       icon: 'text-[10px] text-slate-200 font-black',
                     }"
+                    @click.stop
                     @change="handleTrayChange"
                   />
                 </div>
@@ -235,7 +254,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                   <span class="tray-desc">Minimiza el launcher a la bandeja del sistema</span>
                 </div>
                 <div class="tray-indicator" :class="{ 'tray-indicator--on': minimizeToTray }">
-                  {{ minimizeToTray ? 'ON' : 'OFF' }}
+                  {{ minimizeToTray ? "ON" : "OFF" }}
                 </div>
               </div>
             </div>
@@ -254,7 +273,10 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                   v-for="(item, index) in menuItems"
                   :key="typeof item.label === 'string' ? item.label : index"
                   class="action-row"
-                  :style="{ '--row-bg': getMeta(item.label).color, '--row-glow': getMeta(item.label).glow }"
+                  :style="{
+                    '--row-bg': getMeta(item.label).color,
+                    '--row-glow': getMeta(item.label).glow,
+                  }"
                   @click="handleDynamicOptionClick(item)"
                 >
                   <!-- Icon box -->
@@ -263,7 +285,9 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                   </div>
                   <!-- Text -->
                   <div class="action-text">
-                    <span class="action-label-text">{{ typeof item.label === 'string' ? item.label : '' }}</span>
+                    <span class="action-label-text">{{
+                      typeof item.label === "string" ? item.label : ""
+                    }}</span>
                     <span class="action-desc-text">{{ getMeta(item.label).desc }}</span>
                   </div>
                   <!-- Arrow -->
@@ -271,7 +295,6 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
                 </button>
               </div>
             </div>
-
           </div>
 
           <!-- Footer -->
@@ -323,23 +346,31 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
         :class="action.busy ? 'opacity-100' : 'opacity-0'"
         aria-live="polite"
       >
-        <span class="action-spinner" :class="actionVariant === 'secondary' ? 'action-spinner-light' : 'action-spinner-dark'" />
+        <span
+          class="action-spinner"
+          :class="actionVariant === 'secondary' ? 'action-spinner-light' : 'action-spinner-dark'"
+        />
         <span
           class="ml-1.5 font-mono font-bold tabular-nums text-[11px] transition-opacity duration-150"
           :class="action.busy && typeof action.progress === 'number' ? 'opacity-100' : 'opacity-0'"
         >
-          {{ typeof action.progress === 'number' ? `${Math.floor(action.progress)}%` : '' }}
+          {{ typeof action.progress === "number" ? `${Math.floor(action.progress)}%` : "" }}
         </span>
       </span>
       <span
         class="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden transition-opacity duration-150"
-        :class="[action.busy && typeof action.progress === 'number' ? 'opacity-100' : 'opacity-0', actionProgressTrackClass]"
+        :class="[
+          action.busy && typeof action.progress === 'number' ? 'opacity-100' : 'opacity-0',
+          actionProgressTrackClass,
+        ]"
         aria-hidden="true"
       >
         <span
           class="block h-full transition-[width] duration-150"
           :class="actionProgressFillClass"
-          :style="{ width: `${Math.min(100, Math.max(0, typeof action.progress === 'number' ? action.progress : 0))}%` }"
+          :style="{
+            width: `${Math.min(100, Math.max(0, typeof action.progress === 'number' ? action.progress : 0))}%`,
+          }"
         />
       </span>
     </button>
@@ -347,15 +378,18 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500;600&display=swap");
 
 /* ── Check item row ── */
 .check-item {
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
 }
 
 .settings-gear {
-  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 }
 .settings-gear:hover {
 }
@@ -366,14 +400,14 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 .dialog-shell {
   position: relative;
   border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.07);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   background: #0e0e10;
   overflow: hidden;
-  font-family: 'DM Sans', sans-serif;
+  font-family: "DM Sans", sans-serif;
   box-shadow:
-    0 32px 80px rgba(0,0,0,0.7),
-    0 0 0 1px rgba(255,255,255,0.04) inset,
-    0 1px 0 rgba(255,255,255,0.08) inset;
+    0 32px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset,
+    0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
 /* Top ambient glow */
@@ -384,7 +418,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   transform: translateX(-50%);
   width: 280px;
   height: 120px;
-  background: radial-gradient(ellipse, rgba(251,115,0,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(251, 115, 0, 0.12) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -406,8 +440,8 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  border: 1px solid rgba(251,115,0,0.2);
-  background: rgba(251,115,0,0.08);
+  border: 1px solid rgba(251, 115, 0, 0.2);
+  background: rgba(251, 115, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -416,26 +450,26 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 
 .dialog-icon {
   font-size: 14px;
-  color: rgba(251,115,0,0.8);
+  color: rgba(251, 115, 0, 0.8);
 }
 
 .dialog-eyebrow {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(251,115,0,0.5);
+  color: rgba(251, 115, 0, 0.5);
   margin: 0 0 2px;
 }
 
 .dialog-title {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.9);
+  color: rgba(255, 255, 255, 0.9);
   margin: 0;
   line-height: 1;
 }
@@ -444,9 +478,9 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.07);
-  background: rgba(255,255,255,0.03);
-  color: rgba(255,255,255,0.25);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.25);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -455,14 +489,20 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   transition: all 0.2s;
 }
 .dialog-close:hover {
-  background: rgba(255,255,255,0.07);
-  color: rgba(255,255,255,0.7);
-  border-color: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.7);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .dialog-divider {
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 30%, rgba(255,255,255,0.06) 70%, transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06) 30%,
+    rgba(255, 255, 255, 0.06) 70%,
+    transparent
+  );
   margin: 0 20px;
 }
 
@@ -475,17 +515,19 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 }
 
 .section-label {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.18);
+  color: rgba(255, 255, 255, 0.18);
   margin: 0 0 8px 4px;
 }
 
 /* ── Tray row ── */
-.tray-section { margin-bottom: 4px; }
+.tray-section {
+  margin-bottom: 4px;
+}
 
 .tray-row {
   display: flex;
@@ -493,21 +535,21 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   gap: 12px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.05);
-  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
 }
 
 .tray-row:hover {
-  border-color: rgba(251,115,0,0.2);
-  background: rgba(251,115,0,0.04);
+  border-color: rgba(251, 115, 0, 0.2);
+  background: rgba(251, 115, 0, 0.04);
 }
 
 .tray-row--active {
-  border-color: rgba(251,115,0,0.15);
-  background: rgba(251,115,0,0.05);
+  border-color: rgba(251, 115, 0, 0.15);
+  background: rgba(251, 115, 0, 0.05);
 }
 
 .tray-checkbox-wrap {
@@ -524,44 +566,49 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 .tray-label {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.8);
+  color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.01em;
 }
 
 .tray-desc {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.25);
+  color: rgba(255, 255, 255, 0.25);
 }
 
 .tray-indicator {
-  font-family: 'Rajdhani', sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.15em;
   padding: 2px 7px;
   border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.08);
-  color: rgba(255,255,255,0.2);
-  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.03);
   transition: all 0.25s;
 }
 
 .tray-indicator--on {
   color: #fb7300;
-  border-color: rgba(251,115,0,0.3);
-  background: rgba(251,115,0,0.08);
-  box-shadow: 0 0 8px rgba(251,115,0,0.2);
+  border-color: rgba(251, 115, 0, 0.3);
+  background: rgba(251, 115, 0, 0.08);
+  box-shadow: 0 0 8px rgba(251, 115, 0, 0.2);
 }
 
 .section-sep {
   height: 1px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   margin: 8px 4px;
 }
 
 /* ── Actions ── */
-.actions-section { }
-.actions-list { display: flex; flex-direction: column; gap: 4px; }
+.actions-section {
+}
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 
 .action-row {
   display: flex;
@@ -570,16 +617,16 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   width: 100%;
   padding: 11px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.05);
-  background: var(--row-bg, rgba(255,255,255,0.02));
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--row-bg, rgba(255, 255, 255, 0.02));
   cursor: pointer;
   text-align: left;
   transition: all 0.2s ease;
 }
 
 .action-row:hover {
-  border-color: rgba(255,255,255,0.1);
-  background: var(--row-glow, rgba(255,255,255,0.05));
+  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--row-glow, rgba(255, 255, 255, 0.05));
   transform: translateX(2px);
 }
 
@@ -591,8 +638,8 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -601,18 +648,18 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 }
 
 .action-row:hover .action-icon-box {
-  background: rgba(255,255,255,0.09);
-  border-color: rgba(255,255,255,0.12);
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .action-icon-i {
   font-size: 13px;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.4);
   transition: color 0.2s;
 }
 
 .action-row:hover .action-icon-i {
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .action-text {
@@ -626,28 +673,28 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 .action-label-text {
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255, 255, 255, 0.75);
   transition: color 0.2s;
 }
 
 .action-row:hover .action-label-text {
-  color: rgba(255,255,255,0.95);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .action-desc-text {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.22);
+  color: rgba(255, 255, 255, 0.22);
 }
 
 .action-arrow {
   font-size: 9px;
-  color: rgba(255,255,255,0.12);
+  color: rgba(255, 255, 255, 0.12);
   flex-shrink: 0;
   transition: all 0.2s;
 }
 
 .action-row:hover .action-arrow {
-  color: rgba(255,255,255,0.4);
+  color: rgba(255, 255, 255, 0.4);
   transform: translateX(2px);
 }
 
@@ -662,12 +709,12 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
 
 .footer-shield {
   font-size: 10px;
-  color: rgba(251,115,0,0.25);
+  color: rgba(251, 115, 0, 0.25);
 }
 
 .footer-text {
   font-size: 10.5px;
-  color: rgba(255,255,255,0.13);
+  color: rgba(255, 255, 255, 0.13);
 }
 
 /* ══ Spinners ══ */
@@ -675,8 +722,8 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   width: 12px;
   height: 12px;
   border-radius: 9999px;
-  border: 1.5px solid rgba(255,255,255,0.18);
-  border-top-color: rgba(255,255,255,0.7);
+  border: 1.5px solid rgba(255, 255, 255, 0.18);
+  border-top-color: rgba(255, 255, 255, 0.7);
   animation: spin 1s linear infinite;
 }
 
@@ -688,13 +735,31 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   border-style: solid;
   animation: spin 1s linear infinite;
 }
-.action-spinner-dark { border-color: rgba(0,0,0,0.2); border-top-color: rgba(0,0,0,0.85); }
-.action-spinner-light { border-color: rgba(255,255,255,0.2); border-top-color: rgba(255,255,255,0.9); }
+.action-spinner-dark {
+  border-color: rgba(0, 0, 0, 0.2);
+  border-top-color: rgba(0, 0, 0, 0.85);
+}
+.action-spinner-light {
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: rgba(255, 255, 255, 0.9);
+}
 
-.action-label.opacity-0 { transition-delay: 0ms; }
-.action-label.opacity-100 { transition-delay: 120ms; }
-.action-busy.opacity-0 { transition-delay: 0ms; }
-.action-busy.opacity-100 { transition-delay: 120ms; }
+.action-label.opacity-0 {
+  transition-delay: 0ms;
+}
+.action-label.opacity-100 {
+  transition-delay: 120ms;
+}
+.action-busy.opacity-0 {
+  transition-delay: 0ms;
+}
+.action-busy.opacity-100 {
+  transition-delay: 120ms;
+}
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 </style>

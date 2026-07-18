@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron"
+import { ipcMain, shell } from "electron"
 import { IPC } from "./channels"
 import type { GameLaunchPayload, HealthCheckPayload, WindowState } from "./channels"
 import store from "../services/store"
@@ -11,7 +11,6 @@ import { installGta } from "../services/gtaInstall"
 import type { GtaInstallProgress, GtaInstallResult } from "../services/gtaInstall"
 import { installCache } from "../services/cacheInstall"
 import type { CacheInstallProgress, CacheInstallResult } from "../services/cacheInstall"
-import { checkCache, checkGta, checkSamp } from "../services/health"
 import { getGameStatus, launchGame } from "../services/launcher"
 import { cdnGet } from "../services/cdn"
 import { pingServer } from "../services/sampQuery"
@@ -24,34 +23,16 @@ import type { InstallProgress, InstallResult } from "../services/sampInstall"
 import { quitAndInstall } from "../services/updater"
 import path from "node:path"
 import fs from "node:fs"
-import { rm, mkdir } from "node:fs/promises"
-import os from "node:os"
-import { Buffer } from "node:buffer"
 import { execSync } from "node:child_process"
-import axios from "axios"
-import extract from "extract-zip"
-import log from "electron-log"
-import type {
-  ModDefinition,
-  ModFile,
-  EssentialsStatus,
-  InstallProgressEvent,
-  ModFileDestination,
-  InstalledModInfo,
-  ModStatus,
-  SystemDependency,
-  DepStatus,
-} from "../../src/types/mods"
-import { Mod } from "../domain/models/mod"
-import { MOD_CATALOG } from "../../src/data/mods"
-import { 
-  appService, 
-  windowService, 
-  settingsService, 
-  modVerifierService, 
+import type { Mod, ModFile, SystemDependency, DepStatus } from "../../src/types/mods"
+import {
+  appService,
+  windowService,
+  settingsService,
+  modVerifierService,
   healthService,
   modController,
-  updateController
+  updateController,
 } from "../dependencies"
 
 export function registerIpcHandlers() {
@@ -250,19 +231,18 @@ export function registerIpcHandlers() {
   })
 
   // Cancellation support
-  ipcMain.handle("mods:cancel-install", async (_event, modId: string) => {
+  ipcMain.handle(IPC.MODS_CANCEL_INSTALL, async (_event, modId: string) => {
     return modController.cancelInstallation(_event, modId)
   })
 
   // --- UPDATES SYSTEM ---
-  ipcMain.handle("updates:check", async (event) => {
+  ipcMain.handle(IPC.UPDATES_CHECK, async (event) => {
     return updateController.checkForUpdates(event)
   })
 
-  ipcMain.handle("updates:check-mod", async (event, modId: string) => {
+  ipcMain.handle(IPC.UPDATES_CHECK_MOD, async (event, modId: string) => {
     return updateController.checkModUpdate(event, modId)
   })
-
 
   ipcMain.handle(IPC.MODS_UNINSTALL, async (event, modId: string) => {
     return modController.uninstallMod(event, modId)
@@ -313,23 +293,4 @@ export function registerIpcHandlers() {
     if (parsed.protocol !== "https:") return
     shell.openExternal(parsed.toString())
   })
-}
-
-function resolveModPath(
-  gameDir: string,
-  destination: ModFileDestination,
-  filename: string,
-): string {
-  switch (destination) {
-    case "gta_root":
-      return path.join(gameDir, filename)
-    case "cleo_folder":
-      return path.join(gameDir, "cleo", filename)
-    case "modloader_folder":
-      return path.join(gameDir, "modloader", filename)
-    case "documents_samp":
-      return path.join(os.homedir(), "Documents", "GTA San Andreas User Files", "SAMP", filename)
-    default:
-      return path.join(gameDir, filename)
-  }
 }

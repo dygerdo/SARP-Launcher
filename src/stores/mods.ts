@@ -11,7 +11,9 @@ import type {
   EssentialId,
   DepStatus,
 } from "@/types/mods"
-import { MOD_CATALOG, SYSTEM_DEPENDENCIES } from "@/data/mods"
+import { SYSTEM_DEPENDENCIES } from "@/data/mods"
+import { mapModError } from "@/utils/modErrors"
+import { loadCatalog } from "@/services/modCatalog"
 
 export type ToastType = "install" | "uninstall" | "repair" | "error"
 
@@ -32,6 +34,7 @@ function serializeForStore<T>(obj: T): T {
 }
 
 export const useModsStore = defineStore("mods", () => {
+  const catalog = ref<ModDefinition[]>([])
   const installedMods = ref<Record<string, InstalledModInfo>>({})
   const essentials = ref<EssentialsStatus>({
     cleo: "missing",
@@ -53,7 +56,7 @@ export const useModsStore = defineStore("mods", () => {
     const query = searchQuery.value.toLowerCase().trim()
     const coreIds = ["cleo", "modloader", "asiloader"]
 
-    return MOD_CATALOG.filter((mod) => {
+    return catalog.value.filter((mod) => {
       // Excluir esenciales del catálogo general
       if (coreIds.includes(mod.id)) return false
 
@@ -68,6 +71,8 @@ export const useModsStore = defineStore("mods", () => {
 
   async function loadState(): Promise<void> {
     try {
+      catalog.value = await loadCatalog()
+
       // 1. Scan essentials
       essentials.value = await window.launcher.mods.scanEssentials()
 
@@ -93,7 +98,7 @@ export const useModsStore = defineStore("mods", () => {
     try {
       const catalogStatus = await window.launcher.mods.scanCatalog()
 
-      for (const mod of MOD_CATALOG) {
+      for (const mod of catalog.value) {
         const fileStatus = catalogStatus[mod.id] || {}
         const results = Object.values(fileStatus)
 
@@ -163,32 +168,6 @@ export const useModsStore = defineStore("mods", () => {
     }, timeout)
   }
 
-  function mapModError(error: unknown, modName?: string): string {
-    const technical = error instanceof Error ? error.message : String(error)
-    console.error("Mod error:", technical)
-
-    const lower = technical.toLowerCase()
-    const title = modName ? `El mod ${modName}` : "El mod"
-
-    if (lower.includes("404") || lower.includes("not found") || lower.includes("axioserror")) {
-      return `${title} no está disponible por el momento.`
-    }
-    if (
-      lower.includes("network") ||
-      lower.includes("timeout") ||
-      lower.includes("failed to fetch")
-    ) {
-      return `${title} no se pudo descargar. Comprueba tu conexión e inténtalo de nuevo.`
-    }
-    if (lower.includes("permission") || lower.includes("eacces") || lower.includes("enospc")) {
-      return `${title} no se pudo guardar en disco. Comprueba que tengas espacio y permisos.`
-    }
-    if (lower.includes("parse") || lower.includes("invalid")) {
-      return `${title} tiene un paquete inválido o corrupto.`
-    }
-    return `${title} no se pudo instalar en este momento. Intenta de nuevo más tarde.`
-  }
-
   function pushErrorToast(message: string): void {
     pushToast(message, "error")
   }
@@ -209,7 +188,7 @@ export const useModsStore = defineStore("mods", () => {
     installStatus.value[mod.id] = "downloading"
     try {
       const result = await window.launcher.mods.install(mod)
-      
+
       if (!result.success) {
         throw new Error(result.error ?? "No se ha podido descargar e instalar correctamente.")
       }
@@ -250,7 +229,7 @@ export const useModsStore = defineStore("mods", () => {
     }
 
     // Check for mods that require this essential
-    const essentialDependents = MOD_CATALOG.filter(
+    const essentialDependents = catalog.value.filter(
       (m) => m.requiresEssentials.includes(mod.id as EssentialId) && isInstalled(m.id),
     )
     if (essentialDependents.length > 0) {
@@ -337,7 +316,7 @@ export const useModsStore = defineStore("mods", () => {
     if (mod.dependsOn) {
       for (const depId of mod.dependsOn) {
         if (!isInstalled(depId) || isPartial(depId)) {
-          const depMod = MOD_CATALOG.find((m) => m.id === depId)
+          const depMod = catalog.value.find((m) => m.id === depId)
           missing.push(depMod?.name || depId)
         }
       }
@@ -347,7 +326,7 @@ export const useModsStore = defineStore("mods", () => {
   }
 
   function getDependentMods(modId: string): ModDefinition[] {
-    return MOD_CATALOG.filter((m) => m.dependsOn?.includes(modId) && isInstalled(m.id))
+    return catalog.value.filter((m) => m.dependsOn?.includes(modId) && isInstalled(m.id))
   }
 
   /**
@@ -369,7 +348,7 @@ export const useModsStore = defineStore("mods", () => {
     return Object.entries(installedMods.value)
       .filter(([, info]) => info.status === "reparar")
       .map(([id, info]) => {
-        const mod = MOD_CATALOG.find((m) => m.id === id)
+        const mod = catalog.value.find((m) => m.id === id)
         return mod
           ? {
               mod,
@@ -417,7 +396,7 @@ export const useModsStore = defineStore("mods", () => {
     installStatus.value[data.modId] = data.status
     if (data.status === "error") {
       const message = data.error
-        ? mapModError(data.error, MOD_CATALOG.find((m) => m.id === data.modId)?.name)
+        ? mapModError(data.error, catalog.value.find((m) => m.id === data.modId)?.name)
         : `Ha habido un problema con el mod. Intenta de nuevo más tarde.`
       errors.value[data.modId] = message
       pushErrorToast(message)
@@ -476,7 +455,6 @@ export const useModsStore = defineStore("mods", () => {
   // This is called by components or when needed
   setupListeners()
   void loadState()
-
 
   return {
     installedMods,

@@ -14,178 +14,59 @@ const hasIssues = computed(() => criticalMissingCount.value > 0)
 </script>
 
 <template>
-  <div class="system-status-card" :class="{ 'has-issues': hasIssues }">
-    <!-- Accent line top -->
-    <div class="accent-line" />
+  <div
+    class="relative overflow-hidden rounded-xl transition-all duration-300 cursor-pointer"
+    :class="hasIssues ? 'bg-white/[0.03]' : 'bg-white/[0.02] hover:bg-white/[0.03]'"
+    @click="$emit('open')"
+  >
+    <div
+      v-if="hasIssues"
+      class="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-500/50 to-transparent"
+    />
 
-    <!-- Scan line overlay -->
-    <div class="scanline" />
+    <div class="relative flex items-center gap-4 p-4">
+      <div
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-colors"
+        :class="hasIssues ? 'bg-orange-500/10 text-orange-400' : 'bg-white/[0.04] text-white/30'"
+      >
+        <i class="pi pi-server text-base" />
+      </div>
 
-    <div class="card-inner">
-      
-      
-
-      <!-- Text -->
-      <div class="info">
-        <span class="label">Estado del Sistema</span>
-        <p class="description" :class="{ alert: hasIssues }">
+      <div class="flex-1 min-w-0">
+        <p
+          class="text-[10px] font-bold uppercase tracking-[0.2em] mb-0.5"
+          :class="hasIssues ? 'text-orange-400/70' : 'text-white/30'"
+        >
+          Dependencias del Sistema
+        </p>
+        <p class="text-sm leading-snug" :class="hasIssues ? 'text-white/60' : 'text-white/40'">
           <template v-if="hasIssues">
-            <span class="count">{{ criticalMissingCount }}</span>
-            componente{{ criticalMissingCount > 1 ? 's' : '' }} faltante{{ criticalMissingCount > 1 ? 's' : '' }} detectado{{ criticalMissingCount > 1 ? 's' : '' }}
+            <span
+              class="inline-flex items-center justify-center w-5 h-5 rounded-md text-[10px] font-bold bg-orange-500/15 text-orange-400 mr-1.5 align-middle"
+            >
+              {{ criticalMissingCount }}
+            </span>
+            componente{{ criticalMissingCount > 1 ? "s" : "" }} faltante{{
+              criticalMissingCount > 1 ? "s" : ""
+            }}
           </template>
           <template v-else>
-            Revisa las librerías necesarias para el funcionamiento óptimo de GTA SA.
+            Librerías necesarias para el funcionamiento óptimo del juego.
           </template>
         </p>
       </div>
 
-      <!-- Button -->
-      <button class="config-btn" @click="$emit('open')">
-        <span class="btn-text">Configurar</span>
-        <i class="pi pi-arrow-right" />
-      </button>
+      <div
+        class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-semibold uppercase tracking-wider shrink-0 transition-colors"
+        :class="
+          hasIssues
+            ? 'bg-orange-500/10 text-orange-400 hover:bg-orange-500/15'
+            : 'bg-white/[0.04] text-white/40 hover:bg-white/[0.06] hover:text-white/60'
+        "
+      >
+        <span>Configurar</span>
+        <i class="pi pi-arrow-right text-[9px]" />
+      </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;500&display=swap');
-
-.system-status-card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: linear-gradient(135deg, #111113 0%, #0e0e10 60%, #111116 100%);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-  font-family: 'Inter', sans-serif;
-}
-
-.system-status-card:hover {
-  border-color: rgba(251, 115, 0, 0.25);
-  box-shadow: 0 0 32px rgba(251, 115, 0, 0.06), 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.system-status-card.has-issues {
-  border-color: rgba(251, 115, 0, 0.2);
-  box-shadow: 0 0 24px rgba(251, 115, 0, 0.08);
-}
-
-/* Top accent line */
-.accent-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(251, 115, 0, 0.6) 40%, rgba(251, 115, 0, 0.6) 60%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.system-status-card:hover .accent-line,
-.system-status-card.has-issues .accent-line {
-  opacity: 1;
-}
-
-/* Scan line */
-.scanline {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(255, 255, 255, 0.012) 2px,
-    rgba(255, 255, 255, 0.012) 4px
-  );
-  pointer-events: none;
-}
-
-.card-inner {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-}
-
-
-
-/* Info */
-.info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.label {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: rgba(251, 115, 0, 0.75);
-}
-
-.description {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.5);
-  line-height: 1.4;
-  transition: color 0.2s;
-}
-
-.description.alert {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  background: rgba(251, 115, 0, 0.15);
-  border: 1px solid rgba(251, 115, 0, 0.3);
-  color: #fb7300;
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700;
-  font-size: 11px;
-  margin-right: 5px;
-  vertical-align: middle;
-}
-
-/* Button */
-.config-btn {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 9px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.7);
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.config-btn:hover {
-  background: #fb7300;
-  border-color: #fb7300;
-  color: #000;
-  box-shadow: 0 0 20px rgba(251, 115, 0, 0.3);
-}
-
-</style>

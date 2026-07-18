@@ -138,7 +138,7 @@ const confirmUninstall = (mod: ModDefinition) => {
 
     <div v-if="!isGtaInstalled" class="flex h-[70vh] w-full items-center justify-center">
       <div class="flex max-w-md flex-col items-center gap-6 text-center">
-        <div class="flex h-20 w-20 items-center justify-center rounded-full bg-orange-500/10">
+        <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-orange-500/10">
           <i class="pi pi-exclamation-triangle text-4xl text-orange-500" />
         </div>
         <div class="flex flex-col gap-2">
@@ -212,10 +212,7 @@ const confirmUninstall = (mod: ModDefinition) => {
               </h2>
               <span class="h-px flex-1 ml-4 bg-white/5" />
             </header>
-            <DepsBanner
-              :has-missing="store.hasCriticalMissing"
-              @open="depsDrawerOpen = true"
-            />
+            <DepsBanner @open="depsDrawerOpen = true" />
           </section>
 
           <!-- BARRA DE FILTROS -->
@@ -224,7 +221,7 @@ const confirmUninstall = (mod: ModDefinition) => {
           </section>
 
           <!-- GRID DE MODS -->
-          <section class="flex flex-col gap-4 min-h-[400px]">
+          <section class="flex flex-col gap-4">
             <header class="flex items-center justify-between">
               <h2 class="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40">
                 Catálogo disponible ({{ store.filteredMods.length }})
@@ -232,32 +229,31 @@ const confirmUninstall = (mod: ModDefinition) => {
               <span class="h-px flex-1 ml-4 bg-white/5" />
             </header>
 
-            <TransitionGroup
-              name="list"
-              tag="div"
-              class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
-            >
-              <ModCard
-                v-for="(mod, i) in paginatedMods"
-                :key="mod.id"
-                :mod="mod"
-                :style="{ '--i': i }"
-                @uninstall="confirmUninstall(mod)"
-              />
-            </TransitionGroup>
+            <Transition name="grid-swap" mode="out-in">
+              <div
+                :key="`${currentPage}-${store.selectedCategory}-${store.selectedType}-${store.searchQuery}`"
+                class="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"
+              >
+                <ModCard
+                  v-for="mod in paginatedMods"
+                  :key="mod.id"
+                  :mod="mod"
+                  @uninstall="confirmUninstall(mod)"
+                />
+              </div>
+            </Transition>
 
             <!-- PAGINACIÓN -->
             <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-2">
               <Button
                 icon="pi pi-chevron-left"
-                class="!w-8 !h-8 !p-0 !rounded-md !border-zinc-800 !bg-zinc-900/50 !text-white/40 hover:!text-white disabled:!opacity-20"
+                class="!h-8 !w-8 !rounded-xl !border-none !bg-white/[0.04] !p-0 !text-white/40 !outline-none !ring-0 hover:!bg-white/[0.08] hover:!text-white disabled:!opacity-20"
                 :disabled="currentPage === 1"
-                outlined
                 @click="currentPage--"
               />
 
               <div
-                class="flex items-center gap-1.5 px-4 font-mono text-[10px] font-bold tracking-widest text-white/40"
+                class="flex items-center gap-1.5 px-4 font-mono text-[11px] font-bold tracking-widest text-white/40"
               >
                 <span class="text-white">{{ currentPage }}</span>
                 <span>/</span>
@@ -266,9 +262,8 @@ const confirmUninstall = (mod: ModDefinition) => {
 
               <Button
                 icon="pi pi-chevron-right"
-                class="!w-8 !h-8 !p-0 !rounded-md !border-zinc-800 !bg-zinc-900/50 !text-white/40 hover:!text-white disabled:!opacity-20"
+                class="!h-8 !w-8 !rounded-xl !border-none !bg-white/[0.04] !p-0 !text-white/40 !outline-none !ring-0 hover:!bg-white/[0.08] hover:!text-white disabled:!opacity-20"
                 :disabled="currentPage === totalPages"
-                outlined
                 @click="currentPage++"
               />
             </div>
@@ -277,8 +272,8 @@ const confirmUninstall = (mod: ModDefinition) => {
               v-if="store.filteredMods.length === 0"
               class="flex flex-col items-center justify-center gap-4 py-20 text-center"
             >
-              <div class="rounded-full bg-white/5 p-6">
-                <i class="pi pi-search text-3xl text-white/10" />
+              <div class="p-6 bg-white/[0.03] rounded-xl">
+                <i class="pi pi-search text-3xl text-white/15" />
               </div>
               <p class="text-sm text-white/40">
                 No se encontraron mods que coincidan con tu búsqueda.
@@ -314,27 +309,21 @@ const confirmUninstall = (mod: ModDefinition) => {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-.list-enter-active {
+.grid-swap-enter-active {
   transition:
-    opacity 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-  transition-delay: calc(var(--i, 0) * 35ms);
+    opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.list-leave-active {
+.grid-swap-leave-active {
   transition:
-    opacity 0.25s ease,
-    transform 0.25s ease;
+    opacity 0.15s ease;
 }
-.list-enter-from {
+.grid-swap-enter-from {
   opacity: 0;
-  transform: translateY(20px) scale(0.98);
+  transform: translateY(6px);
 }
-.list-leave-to {
+.grid-swap-leave-to {
   opacity: 0;
-  transform: translateY(-10px) scale(0.96);
-}
-.list-move {
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .fade-enter-active,

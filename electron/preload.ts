@@ -148,9 +148,12 @@ const launcherApi = {
       ipcRenderer.invoke(IPC.MODS_SCAN_INSTALLED, files),
     scanCatalog: (): Promise<Record<string, Record<string, boolean>>> =>
       ipcRenderer.invoke(IPC.MODS_SCAN_CATALOG),
-    install: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> => ipcRenderer.invoke(IPC.MODS_INSTALL, mod),
+    install: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> =>
+      ipcRenderer.invoke(IPC.MODS_INSTALL, mod),
     uninstall: (mod: ModDefinition): Promise<{ success: boolean; error?: string }> =>
       ipcRenderer.invoke(IPC.MODS_UNINSTALL, mod),
+    cancelInstall: (modId: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.MODS_CANCEL_INSTALL, modId),
     onInstallProgress: (
       callback: (event: IpcRendererEvent, data: InstallProgressEvent) => void,
     ): (() => void) => {
@@ -164,6 +167,10 @@ const launcherApi = {
       ipcRenderer.on(IPC.SECURITY_ALERT, listener)
       return () => ipcRenderer.off(IPC.SECURITY_ALERT, listener)
     },
+  },
+  updates: {
+    check: (): Promise<unknown[]> => ipcRenderer.invoke(IPC.UPDATES_CHECK),
+    checkMod: (modId: string): Promise<unknown> => ipcRenderer.invoke(IPC.UPDATES_CHECK_MOD, modId),
   },
   deps: {
     scan: (deps: SystemDependency[]) => ipcRenderer.invoke("deps:scan", deps),
