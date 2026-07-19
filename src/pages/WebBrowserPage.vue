@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } from "vue"
+import { ref, reactive, computed, onMounted, onUnmounted } from "vue"
 import { useRoute, useRouter } from "vue-router"
 import { useWindowState } from "@/composables/useWindowState"
 
@@ -15,15 +15,16 @@ interface BrowserTab {
   hasError: boolean
 }
 
-// Minimal webview interface matching Electron.WebviewTag's event methods
-interface WebviewElement {
+// Minimal webview interface for event listener management
+interface WebviewEl {
   src: string
   style: CSSStyleDeclaration
   addEventListener: (event: string, handler: (...args: _Arg[]) => void) => void
   removeEventListener: (event: string, handler: (...args: _Arg[]) => void) => void
 }
 
-type _Arg = any
+type _Arg = any  
+type Handler = (...args: _Arg[]) => void
 
 let tabCounter = 0
 
@@ -51,7 +52,7 @@ const initialTitle = computed(() => (route.query.title as string) || "")
 
 const tabs = reactive<BrowserTab[]>([])
 const activeTabId = ref("")
-const webviewRefs = ref<Record<string, WebviewElement>>({})
+const webviewEls = ref<Record<string, WebviewEl>>({})
 
 function getActiveTab(): BrowserTab | undefined {
   return tabs.find((t) => t.id === activeTabId.value)
@@ -65,10 +66,11 @@ function closeTab(id: string) {
   const idx = tabs.findIndex((t) => t.id === id)
   if (idx === -1) return
 
-  const webview = webviewRefs.value[id]
-  if (webview) {
-    webview.src = "about:blank"
-    delete webviewRefs.value[id]
+  // Detach listeners before Vue removes the element from DOM
+  const wv = webviewEls.value[id]
+  if (wv) {
+    detachWebviewListeners(wv)
+    delete webviewEls.value[id]
   }
 
   tabs.splice(idx, 1)
@@ -105,27 +107,33 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-function setWebviewRef(id: string, el: WebviewElement | Element | null) {
+// -- Webview ref callback --
+
+function onWebviewRef(id: string, el: WebviewEl | Element | null) {
   if (el && "src" in el) {
-    webviewRefs.value[id] = el as WebviewElement
+    const wv = el as WebviewEl
+    webviewEls.value[id] = wv
+    const tab = tabs.find((t) => t.id === id)
+    if (tab && !(wv as any).__tabHandlers) {
+      attachWebviewListeners(tab, wv)
+    }
   }
 }
 
-function onNewTabRequested(e: unknown) {
-  const event = e as { url: string; preventDefault: () => void }
-  event.preventDefault()
-  const url = event.url
+// -- New-tab interception (target="_blank") --
+
+function onNewWindow(e: unknown) {
+  const evt = e as { url: string; preventDefault: () => void }
+  evt.preventDefault()
+  const url = evt.url
   if (!url || url === "about:blank") return
 
   const newTab = createTab(url)
   tabs.push(newTab)
   activeTabId.value = newTab.id
-
-  nextTick(() => {
-    const wv = webviewRefs.value[newTab.id]
-    if (wv) attachWebviewListeners(newTab, wv)
-  })
 }
+
+// -- Webview event handlers --
 
 function onTabLoad(tab: BrowserTab) {
   tab.isLoading = false
@@ -133,7 +141,8 @@ function onTabLoad(tab: BrowserTab) {
 }
 
 function onTabFailLoad(tab: BrowserTab, e: { errorCode: number }) {
-  if (e.errorCode === -3) return
+  // -3 = ERR_ABORTED (navigation cancelled), -2 = ERR_FAILED (about:blank, etc.)
+  if (e.errorCode === -3 || e.errorCode === -2) return
   tab.isLoading = false
   tab.hasError = true
 }
@@ -142,22 +151,19 @@ function onTabNavigate(tab: BrowserTab, e: { url: string }) {
   tab.url = e.url
 }
 
-function onTabTitleUpdate(tab: BrowserTab, title: string) {
-  if (title) tab.title = title
+function onTabTitleUpdate(tab: BrowserTab, e: { title: string }) {
+  if (e.title) tab.title = e.title
 }
 
-// Store bound handlers so we can remove them later
-type Handler = (...args: _Arg[]) => void
-
-function attachWebviewListeners(tab: BrowserTab, wv: WebviewElement) {
+function attachWebviewListeners(tab: BrowserTab, wv: WebviewEl) {
   const onLoad = () => onTabLoad(tab)
   const onFail = (e: _Arg) => onTabFailLoad(tab, e)
   const onNav = (e: _Arg) => onTabNavigate(tab, e)
   const onNavInPage = (e: _Arg) => {
     if (e.isMainFrame) onTabNavigate(tab, e)
   }
-  const onTitle = (e: _Arg) => onTabTitleUpdate(tab, e.title)
-  const onNewWin = (e: _Arg) => onNewTabRequested(e)
+  const onTitle = (e: _Arg) => onTabTitleUpdate(tab, e)
+  const onNewWin = (e: _Arg) => onNewWindow(e)
 
   wv.addEventListener("did-finish-load", onLoad)
   wv.addEventListener("did-fail-load", onFail)
@@ -166,11 +172,11 @@ function attachWebviewListeners(tab: BrowserTab, wv: WebviewElement) {
   wv.addEventListener("page-title-updated", onTitle)
   wv.addEventListener("new-window", onNewWin)
 
-  // Store handlers for cleanup
+  // Store for cleanup
   ;(wv as any).__tabHandlers = { onLoad, onFail, onNav, onNavInPage, onTitle, onNewWin }
 }
 
-function detachWebviewListeners(tab: BrowserTab, wv: WebviewElement) {
+function detachWebviewListeners(wv: WebviewEl) {
   const h = (wv as any).__tabHandlers as Record<string, Handler> | undefined
   if (!h) return
   wv.removeEventListener("did-finish-load", h.onLoad)
@@ -179,9 +185,12 @@ function detachWebviewListeners(tab: BrowserTab, wv: WebviewElement) {
   wv.removeEventListener("did-navigate-in-page", h.onNavInPage)
   wv.removeEventListener("page-title-updated", h.onTitle)
   wv.removeEventListener("new-window", h.onNewWin)
+  delete (wv as any).__tabHandlers
 }
 
-onMounted(async () => {
+// -- Lifecycle --
+
+onMounted(() => {
   window.addEventListener("keydown", handleKeydown)
 
   if (initialUrl.value) {
@@ -193,39 +202,21 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener("keydown", handleKeydown)
+  // Detach listeners from all remaining webviews — Vue will destroy the DOM elements
   for (const tab of tabs) {
-    const wv = webviewRefs.value[tab.id]
-    if (wv) {
-      detachWebviewListeners(tab, wv)
-      wv.src = "about:blank"
-    }
-  }
-})
-
-watch(activeTabId, (newId, oldId) => {
-  if (oldId) {
-    const oldWv = webviewRefs.value[oldId]
-    if (oldWv) oldWv.style.display = "none"
-  }
-  if (newId) {
-    const newWv = webviewRefs.value[newId]
-    if (newWv) {
-      newWv.style.display = "block"
-      const tab = tabs.find((t) => t.id === newId)
-      if (tab) tab.isLoading = false
-    }
+    const wv = webviewEls.value[tab.id]
+    if (wv) detachWebviewListeners(wv)
   }
 })
 </script>
 
 <template>
   <div class="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950">
-    <!-- Title Bar + Tabs -->
+    <!-- Top bar -->
     <div
       class="flex shrink-0 flex-col border-b border-white/5 bg-black/40"
       style="-webkit-app-region: drag"
     >
-      <!-- Top row: back + actions -->
       <div class="flex items-center gap-2 px-3 py-2">
         <button
           type="button"
@@ -284,35 +275,32 @@ watch(activeTabId, (newId, oldId) => {
           <i v-else-if="tab.hasError" class="pi pi-exclamation-triangle text-[8px] text-rose-400" />
           <i v-else class="pi pi-globe text-[8px] text-white/25" />
           <span class="max-w-[140px] truncate">{{ tab.title }}</span>
-          <button
-            type="button"
+          <span
             class="ml-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded text-white/20 opacity-0 transition-all hover:bg-white/10 hover:text-white/60 group-hover:opacity-100"
             title="Cerrar pestaña"
             @click.stop="closeTab(tab.id)"
           >
             <i class="pi pi-times text-[7px]" />
-          </button>
+          </span>
         </button>
       </div>
     </div>
 
     <!-- Webview Content -->
-    <div class="relative min-h-0 flex-1 bg-zinc-950">
+    <div class="relative flex-1 min-h-0">
       <template v-for="tab in tabs" :key="tab.id">
-        <!-- Loading overlay per tab -->
-        <Transition name="fade">
-          <div
-            v-if="tab.id === activeTabId && tab.isLoading"
-            class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
-          >
-            <div class="flex flex-col items-center gap-3">
-              <i class="pi pi-spinner animate-spin text-2xl text-orange-500" />
-              <span class="text-xs text-white/40">{{ tab.title }}</span>
-            </div>
+        <!-- Loading overlay -->
+        <div
+          v-if="tab.id === activeTabId && tab.isLoading"
+          class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
+        >
+          <div class="flex flex-col items-center gap-3">
+            <i class="pi pi-spinner animate-spin text-2xl text-orange-500" />
+            <span class="text-xs text-white/40">{{ tab.title }}</span>
           </div>
-        </Transition>
+        </div>
 
-        <!-- Error overlay per tab -->
+        <!-- Error overlay -->
         <div
           v-if="tab.id === activeTabId && tab.hasError"
           class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
@@ -348,16 +336,10 @@ watch(activeTabId, (newId, oldId) => {
 
         <!-- Webview -->
         <webview
-          :ref="(el: any) => setWebviewRef(tab.id, el)"
+          v-show="tab.id === activeTabId"
+          :ref="(el: any) => onWebviewRef(tab.id, el)"
           :src="tab.url"
-          :style="{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            border: 'none',
-            display: tab.id === activeTabId ? 'block' : 'none',
-          }"
+          style="position: absolute; inset: 0; width: 100%; height: 100%; border: none"
           allowpopups
         />
       </template>
@@ -366,15 +348,6 @@ watch(activeTabId, (newId, oldId) => {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 .custom-scroll::-webkit-scrollbar {
   height: 2px;
 }
