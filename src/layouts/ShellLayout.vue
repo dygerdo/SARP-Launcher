@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
-import { useRouter } from "vue-router"
+import { onMounted, onUnmounted, ref } from "vue"
 import TitleBar from "@/components/brand/TitleBar.vue"
 import UpdaterBanner from "@/components/brand/UpdaterBanner.vue"
 import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
+import WebTabBar from "@/components/web/WebTabBar.vue"
+import TabWebview from "@/components/web/TabWebview.vue"
 import { useWindowState } from "@/composables/useWindowState"
+import { useWebTabsStore } from "@/stores/webTabs"
 import { useToast } from "primevue/usetoast"
-import { onUnmounted } from "vue"
 
 withDefaults(
   defineProps<{
@@ -23,9 +24,11 @@ const currentYear = new Date().getFullYear()
 
 const { isFullscreen, toggleFullscreen } = useWindowState()
 const toast = useToast()
-const router = useRouter()
+const webTabs = useWebTabsStore()
 
 let cleanupSecurity: (() => void) | null = null
+let cleanupWebviewNav: (() => void) | null = null
+let cleanupKeydown: (() => void) | null = null
 
 const chooserOpen = ref(false)
 const chooserUrl = ref("")
@@ -42,10 +45,30 @@ onMounted(async () => {
       life: 8000,
     })
   })
+
+  cleanupWebviewNav = window.launcher.onWebviewNavigate((url) => {
+    webTabs.openTab(url)
+  })
+
+  const handleKeydown = (e: KeyboardEvent) => {
+    if (!webTabs.hasOpenTabs) return
+    if (e.key === "Escape") {
+      e.preventDefault()
+      webTabs.closeTab(webTabs.activeTabId!)
+    }
+    if (e.ctrlKey && e.key === "w") {
+      e.preventDefault()
+      webTabs.closeTab(webTabs.activeTabId!)
+    }
+  }
+  window.addEventListener("keydown", handleKeydown)
+  cleanupKeydown = () => window.removeEventListener("keydown", handleKeydown)
 })
 
 onUnmounted(() => {
   if (cleanupSecurity) cleanupSecurity()
+  if (cleanupWebviewNav) cleanupWebviewNav()
+  if (cleanupKeydown) cleanupKeydown()
 })
 
 defineSlots<{
@@ -69,7 +92,7 @@ function openInLauncher() {
   const url = chooserUrl.value
   const title = chooserTitle.value
   chooserOpen.value = false
-  router.push({ name: "web", query: { url, title } })
+  webTabs.openTab(url, title)
 }
 
 function openSite() {
@@ -91,7 +114,11 @@ function openSite() {
 
     <TitleBar v-if="!isFullscreen" />
     <UpdaterBanner />
+
+    <!-- Tab bar when web tabs are open, normal nav otherwise -->
+    <WebTabBar v-if="webTabs.hasOpenTabs" />
     <nav
+      v-else
       class="relative z-10 flex items-center justify-center gap-10 border-b border-white/5 bg-black/20 py-3.5"
       style="-webkit-app-region: no-drag"
     >
@@ -132,9 +159,22 @@ function openSite() {
       </div>
     </nav>
 
-    <slot v-if="$slots.belowHeader" name="belowHeader" />
+    <slot v-if="$slots.belowHeader && !webTabs.hasOpenTabs" name="belowHeader" />
 
+    <!-- Web tabs content: render active tab's webview -->
+    <main v-if="webTabs.hasOpenTabs" class="relative z-10 min-h-0 flex-1 overflow-hidden">
+      <TabWebview
+        v-for="tab in webTabs.tabs"
+        v-show="tab.id === webTabs.activeTabId"
+        :key="tab.id"
+        :tab="tab"
+        class="h-full w-full"
+      />
+    </main>
+
+    <!-- Normal launcher content -->
     <main
+      v-else
       class="relative z-10 flex min-h-0 flex-1 flex-col overflow-hidden px-6 py-6 md:px-10 md:py-8"
     >
       <Transition name="shell-fade" mode="out-in">
@@ -152,7 +192,10 @@ function openSite() {
     </main>
 
     <div class="relative z-10 flex-shrink-0">
-      <div v-if="!isFullscreen" class="absolute bottom-full right-5 hidden md:block">
+      <div
+        v-if="!isFullscreen && !webTabs.hasOpenTabs"
+        class="absolute bottom-full right-5 hidden md:block"
+      >
         <GraffitiSpot />
       </div>
 

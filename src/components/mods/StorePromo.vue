@@ -1,23 +1,17 @@
 <script setup lang="ts">
-import { useRouter } from "vue-router"
+import { useWebTabsStore } from "@/stores/webTabs"
 
-const router = useRouter()
+const webTabs = useWebTabsStore()
 
 function openStore() {
-  router.push({
-    name: "web",
-    query: { url: "https://ucp.sarp.es/app/ucp/shop", title: "Tienda SARP" },
-  })
+  webTabs.openTab("https://ucp.sarp.es/app/ucp/shop", "Tienda SARP")
 }
 
 function openModSubmit() {
-  router.push({
-    name: "web",
-    query: {
-      url: "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
-      title: "Proponer Mod",
-    },
-  })
+  webTabs.openTab(
+    "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
+    "Proponer Mod",
+  )
 }
 </script>
 

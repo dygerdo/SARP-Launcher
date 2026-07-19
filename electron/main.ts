@@ -199,6 +199,21 @@ app.whenReady().then(() => {
 
   createWindow()
 
+  // Intercept target="_blank" links inside <webview> elements. When a guest
+  // page tries to open a new window, deny it and send the URL to the renderer
+  // so it can open the link in a new browser tab within the launcher.
+  // Requires allowpopups on the <webview> tag for this handler to fire.
+  if (win) {
+    win.webContents.on("did-attach-webview", (_event, guestContents) => {
+      guestContents.setWindowOpenHandler(({ url }) => {
+        if (url && url !== "about:blank") {
+          win?.webContents.send(IPC.WEBVIEW_NAVIGATE, url)
+        }
+        return { action: "deny" }
+      })
+    })
+  }
+
   // Tray creation can fail if the icon is locked or invalid.
   // Wrap in try-catch so it doesn't block window creation.
   try {

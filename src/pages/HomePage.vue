@@ -9,6 +9,7 @@ import LogoMark from "@/components/brand/LogoMark.vue"
 import ServerStatus from "@/components/home/ServerStatus.vue"
 import { useHealthCheckStore } from "@/stores/healthCheck"
 import { useModsStore } from "@/stores/mods"
+import { useWebTabsStore } from "@/stores/webTabs"
 import { useEvents } from "@/composables/useEvents"
 import { useRotatingTagline } from "@/composables/useRotatingTagline"
 import { useGameStatus } from "@/composables/useGameStatus"
@@ -26,6 +27,7 @@ const { events, loading: eventsLoading, load: loadEvents } = useEvents()
 const { tagline } = useRotatingTagline()
 const { phase, launchMessage, launch } = useGameStatus()
 const router = useRouter()
+const webTabs = useWebTabsStore()
 const blockHint = ref<string | null>(null)
 const selectedIndex = ref<number | null>(null)
 
@@ -124,13 +126,10 @@ function goToMods() {
 }
 
 function proposeMod() {
-  router.push({
-    name: "web",
-    query: {
-      url: "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
-      title: "Proponer Mod",
-    },
-  })
+  webTabs.openTab(
+    "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
+    "Proponer Mod",
+  )
 }
 
 async function repairBrokenMod() {

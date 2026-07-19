@@ -176,6 +176,12 @@ const launcherApi = {
     scan: (deps: SystemDependency[]) => ipcRenderer.invoke("deps:scan", deps),
     openUrl: (url: string) => ipcRenderer.invoke("deps:open-url", url),
   },
+
+  onWebviewNavigate: (callback: (url: string) => void): (() => void) => {
+    const listener = (_event: IpcRendererEvent, url: string) => callback(url)
+    ipcRenderer.on(IPC.WEBVIEW_NAVIGATE, listener)
+    return () => ipcRenderer.off(IPC.WEBVIEW_NAVIGATE, listener)
+  },
 }
 
 export type LauncherApi = typeof launcherApi

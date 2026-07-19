@@ -14,11 +14,6 @@ const router = createRouter({
       name: "mods",
       component: () => import("@/pages/ModsPage.vue"),
     },
-    {
-      path: "/web",
-      name: "web",
-      component: () => import("@/pages/WebBrowserPage.vue"),
-    },
   ],
 })
 
