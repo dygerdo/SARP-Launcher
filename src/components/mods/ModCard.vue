@@ -23,7 +23,6 @@ const canInstall = computed(() => {
 })
 const isInstalling = computed(() => store.installing[props.mod.id] !== undefined)
 const isUninstalling = computed(() => store.uninstalling.has(props.mod.id))
-const errorMessage = computed(() => store.errors[props.mod.id] ?? "")
 
 const missingEssentials = computed(() => {
   if (asiloaderMissing.value) return ["ASI Loader"]
@@ -105,10 +104,6 @@ function openDetails() {
           <i class="pi pi-lock text-[10px]" />
         </div>
       </template>
-    </div>
-
-    <div v-if="errorMessage" class="mt-2 p-2 rounded-lg text-xs text-rose-300 bg-rose-500/10">
-      {{ errorMessage }}
     </div>
   </div>
 </template>
