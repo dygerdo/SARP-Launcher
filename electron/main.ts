@@ -139,6 +139,7 @@ function createWindow() {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
       nodeIntegration: false,
+      webviewTag: true,
       // Disable DevTools in packaged builds — neutralises F12, Ctrl+Shift+I
       // and webContents.openDevTools(). Casual users can still extract the
       // .asar, but they cannot poke at the running renderer live.

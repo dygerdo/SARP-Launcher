@@ -124,9 +124,13 @@ function goToMods() {
 }
 
 function proposeMod() {
-  window.launcher.openExternal(
-    "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
-  )
+  router.push({
+    name: "web",
+    query: {
+      url: "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
+      title: "Proponer Mod",
+    },
+  })
 }
 
 async function repairBrokenMod() {

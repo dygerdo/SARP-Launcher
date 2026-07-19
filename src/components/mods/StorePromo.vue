@@ -1,12 +1,23 @@
 <script setup lang="ts">
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
 function openStore() {
-  window.launcher.openExternal("https://ucp.sarp.es/app/ucp/shop")
+  router.push({
+    name: "web",
+    query: { url: "https://ucp.sarp.es/app/ucp/shop", title: "Tienda SARP" },
+  })
 }
 
 function openModSubmit() {
-  window.launcher.openExternal(
-    "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
-  )
+  router.push({
+    name: "web",
+    query: {
+      url: "https://forum.sarp.es/index.php?/topic/9149-publica-aqu%C3%AD-tu-petici%C3%B3n-para-permitir-un-mod/",
+      title: "Proponer Mod",
+    },
+  })
 }
 </script>
 

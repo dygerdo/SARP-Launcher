@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue"
+import { useRouter } from "vue-router"
 import TitleBar from "@/components/brand/TitleBar.vue"
 import UpdaterBanner from "@/components/brand/UpdaterBanner.vue"
 import GraffitiSpot from "@/components/home/GraffitiSpot.vue"
@@ -16,16 +17,19 @@ withDefaults(
   },
 )
 
-// Version is read from app.getVersion() so package.json is the single source
-// of truth — no hardcoded "v1.0.0" to forget on each release bump.
 const version = ref<string>("")
 const buildId = __GIT_COMMIT__
 const currentYear = new Date().getFullYear()
 
 const { isFullscreen, toggleFullscreen } = useWindowState()
 const toast = useToast()
+const router = useRouter()
 
 let cleanupSecurity: (() => void) | null = null
+
+const chooserOpen = ref(false)
+const chooserUrl = ref("")
+const chooserTitle = ref("")
 
 onMounted(async () => {
   version.value = await window.launcher.getAppVersion()
@@ -50,16 +54,26 @@ defineSlots<{
   skeleton?(): unknown
 }>()
 
+function openChooser(url: string, title: string) {
+  chooserUrl.value = url
+  chooserTitle.value = title
+  chooserOpen.value = true
+}
+
+function openInBrowser() {
+  chooserOpen.value = false
+  window.launcher.openExternal(chooserUrl.value)
+}
+
+function openInLauncher() {
+  const url = chooserUrl.value
+  const title = chooserTitle.value
+  chooserOpen.value = false
+  router.push({ name: "web", query: { url, title } })
+}
+
 function openSite() {
   window.launcher.openExternal("https://sarp.es")
-}
-
-function openUCP() {
-  window.launcher.openExternal("https://ucp.sarp.es/app/ucp/home")
-}
-
-function openForum() {
-  window.launcher.openExternal("https://forum.sarp.es/")
 }
 </script>
 
@@ -102,7 +116,7 @@ function openForum() {
         <button
           type="button"
           class="flex items-center gap-1.5 rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
-          @click="openUCP"
+          @click="openChooser('https://ucp.sarp.es/app/ucp/home', 'UCP')"
         >
           <i class="pi pi-link text-[8px]" />
           UCP
@@ -110,7 +124,7 @@ function openForum() {
         <button
           type="button"
           class="flex items-center gap-1.5 rounded border border-white/10 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white/50 transition-all hover:border-white/20 hover:bg-white/10 hover:text-white"
-          @click="openForum"
+          @click="openChooser('https://forum.sarp.es/', 'Foro')"
         >
           <i class="pi pi-link text-[8px]" />
           Foro
@@ -173,6 +187,53 @@ function openForum() {
       <i class="pi pi-window-minimize text-[10px]" />
       <span>Salir de pantalla completa</span>
     </button>
+
+    <!-- Open chooser dialog -->
+    <Teleport to="body">
+      <Transition name="chooser-fade">
+        <div
+          v-if="chooserOpen"
+          class="fixed inset-0 z-[99999] flex items-center justify-center"
+          style="-webkit-app-region: no-drag"
+        >
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="chooserOpen = false" />
+          <div
+            class="relative z-10 flex w-72 flex-col overflow-hidden rounded-xl border border-white/10 bg-zinc-900/95 shadow-2xl backdrop-blur-xl"
+          >
+            <div class="flex items-center justify-between px-4 pt-4 pb-2">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-white/70">
+                {{ chooserTitle }}
+              </h3>
+              <button
+                type="button"
+                class="flex h-6 w-6 items-center justify-center rounded-md text-white/30 transition hover:bg-white/10 hover:text-white/60"
+                @click="chooserOpen = false"
+              >
+                <i class="pi pi-times text-[10px]" />
+              </button>
+            </div>
+            <div class="flex flex-col gap-1.5 px-3 pb-3">
+              <button
+                type="button"
+                class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[11px] text-white/60 transition hover:bg-white/5 hover:text-white"
+                @click="openInBrowser"
+              >
+                <i class="pi pi-external-link text-[10px] text-white/40" />
+                <span>Abrir en el navegador</span>
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-[11px] text-white/60 transition hover:bg-white/5 hover:text-white"
+                @click="openInLauncher"
+              >
+                <i class="pi pi-window-maximize text-[10px] text-white/40" />
+                <span>Abrir en el launcher</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -190,5 +251,18 @@ function openForum() {
 .shell-fade-leave-to {
   opacity: 0;
   filter: blur(2px);
+}
+</style>
+
+<style>
+.chooser-fade-enter-active {
+  transition: opacity 0.15s ease;
+}
+.chooser-fade-leave-active {
+  transition: opacity 0.1s ease;
+}
+.chooser-fade-enter-from,
+.chooser-fade-leave-to {
+  opacity: 0;
 }
 </style>
