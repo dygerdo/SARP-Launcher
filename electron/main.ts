@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray } from "electron"
+import { app, BrowserWindow, Menu, Tray, shell } from "electron"
 import { fileURLToPath } from "node:url" // Keep for ESM compatibility if needed
 import path from "node:path"
 import fs from "node:fs"
@@ -202,13 +202,42 @@ app.whenReady().then(() => {
   // Intercept target="_blank" links inside <webview> elements. When a guest
   // page tries to open a new window, deny it and send the URL to the renderer
   // so it can open the link in a new browser tab within the launcher.
+  // Sites that block embedding via X-Frame-Options are opened externally.
   // Requires allowpopups on the <webview> tag for this handler to fire.
+  const EMBED_BLOCKED_HOSTS = [
+    "discord.com",
+    "discord.gg",
+    "youtube.com",
+    "youtu.be",
+    "twitter.com",
+    "x.com",
+    "twitch.tv",
+    "facebook.com",
+    "fb.com",
+    "instagram.com",
+    "reddit.com",
+    "linkedin.com",
+    "tiktok.com",
+    "accounts.google.com",
+  ]
+
   if (win) {
     win.webContents.on("did-attach-webview", (_event, guestContents) => {
       guestContents.setWindowOpenHandler(({ url }) => {
-        if (url && url !== "about:blank") {
-          win?.webContents.send(IPC.WEBVIEW_NAVIGATE, url)
+        if (!url || url === "about:blank") return { action: "deny" }
+
+        try {
+          const host = new URL(url).hostname
+          const isBlocked = EMBED_BLOCKED_HOSTS.some((d) => host === d || host.endsWith(`.${d}`))
+          if (isBlocked) {
+            shell.openExternal(url)
+          } else {
+            win?.webContents.send(IPC.WEBVIEW_NAVIGATE, url)
+          }
+        } catch {
+          shell.openExternal(url)
         }
+
         return { action: "deny" }
       })
     })
