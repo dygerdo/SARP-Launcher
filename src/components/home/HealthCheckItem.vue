@@ -535,9 +535,7 @@ function getMeta(label: string | ((...args: any[]) => string) | undefined) {
   margin: 8px 4px;
 }
 
-/* ── Actions ── */
-.actions-section {
-}
+
 .actions-list {
   display: flex;
   flex-direction: column;
