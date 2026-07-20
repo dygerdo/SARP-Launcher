@@ -6,6 +6,14 @@ const props = defineProps<{ tab: WebTab }>()
 
 const webTabs = useWebTabsStore()
 const preloadPath = ref("")
+const cloudflareChallenge = ref(false)
+
+const CLOUDFLARE_TITLE_PATTERNS = [
+  "just a moment",
+  "checking your browser",
+  "enable javascript",
+  "attention required",
+]
 
 onMounted(async () => {
   preloadPath.value = await window.launcher.getWebviewPreloadPath()
@@ -21,9 +29,30 @@ type Handler = (...args: unknown[]) => void
 
 let webviewEl: WebviewEl | null = null
 let handlers: Record<string, Handler> | null = null
+let cfCheckTimer: ReturnType<typeof setTimeout> | null = null
+
+function isCloudflareChallenge(title: string): boolean {
+  const lower = title.toLowerCase()
+  return CLOUDFLARE_TITLE_PATTERNS.some((p) => lower.includes(p))
+}
 
 function onLoad() {
-  webTabs.updateTab(props.tab.id, { isLoading: false, hasError: false })
+  // After load, wait briefly for Cloudflare JS to execute, then check title
+  cfCheckTimer = setTimeout(() => {
+    if (!webviewEl) return
+    try {
+      const wv = webviewEl as any
+      if (wv.getTitle && isCloudflareChallenge(wv.getTitle())) {
+        cloudflareChallenge.value = true
+        webTabs.updateTab(props.tab.id, { isLoading: false, hasError: false })
+        return
+      }
+    } catch {
+      // getTitle may not be available
+    }
+    cloudflareChallenge.value = false
+    webTabs.updateTab(props.tab.id, { isLoading: false, hasError: false })
+  }, 2000)
 }
 
 function onFailLoad(e: unknown) {
@@ -34,6 +63,7 @@ function onFailLoad(e: unknown) {
 
 function onNav(e: unknown) {
   const evt = e as { url: string }
+  cloudflareChallenge.value = false
   webTabs.updateTab(props.tab.id, { url: evt.url })
 }
 
@@ -44,7 +74,12 @@ function onNavInPage(e: unknown) {
 
 function onTitleUpdate(e: unknown) {
   const evt = e as { title: string }
-  if (evt.title) webTabs.updateTab(props.tab.id, { title: evt.title })
+  if (evt.title) {
+    if (isCloudflareChallenge(evt.title)) {
+      cloudflareChallenge.value = true
+    }
+    webTabs.updateTab(props.tab.id, { title: evt.title })
+  }
 }
 
 function onNewWindow(e: unknown) {
@@ -81,6 +116,7 @@ function attachListeners(wv: WebviewEl) {
 }
 
 function detachListeners(wv: WebviewEl) {
+  if (cfCheckTimer) clearTimeout(cfCheckTimer)
   if (!handlers) return
   wv.removeEventListener("did-finish-load", handlers.onLoad)
   wv.removeEventListener("did-fail-load", handlers.onFail)
@@ -106,6 +142,10 @@ function openInExternalBrowser() {
   window.launcher.openExternal(props.tab.url)
 }
 
+function dismissChallenge() {
+  cloudflareChallenge.value = false
+}
+
 onUnmounted(() => {
   if (webviewEl) detachListeners(webviewEl)
 })
@@ -115,7 +155,7 @@ onUnmounted(() => {
   <div class="relative h-full w-full">
     <!-- Loading overlay -->
     <div
-      v-if="tab.isLoading"
+      v-if="tab.isLoading && !cloudflareChallenge"
       class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
     >
       <div class="flex flex-col items-center gap-3">
@@ -124,9 +164,46 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!-- Cloudflare challenge overlay -->
+    <div
+      v-if="cloudflareChallenge"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950/95 backdrop-blur-sm"
+    >
+      <div class="flex flex-col items-center gap-5 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-500/10">
+          <i class="pi pi-shield text-2xl text-orange-500" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <p class="text-sm font-medium text-white/80">Verificación de seguridad</p>
+          <p class="max-w-xs text-xs leading-relaxed text-white/40">
+            Esta página requiere una verificación de seguridad que no puede completarse dentro del
+            launcher.
+          </p>
+        </div>
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-xs font-medium text-white transition hover:bg-orange-400"
+            @click="openInExternalBrowser"
+          >
+            <i class="pi pi-external-link text-[10px]" />
+            Abrir en navegador
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-lg bg-white/5 px-4 py-2 text-xs font-medium text-white/60 transition hover:bg-white/10 hover:text-white"
+            @click="dismissChallenge"
+          >
+            <i class="pi pi-arrow-left text-[10px]" />
+            Volver
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Error overlay -->
     <div
-      v-if="tab.hasError"
+      v-if="tab.hasError && !cloudflareChallenge"
       class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-950"
     >
       <div class="flex flex-col items-center gap-4 text-center">
