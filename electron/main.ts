@@ -37,6 +37,9 @@ import {
   MIN_WIDTH,
 } from "./services/windowState"
 
+const CHROME_UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+
 // Suppress internal Chromium logs like "Invalid cache size" which are harmless
 // but clutter the console. 3 = FATAL only.
 app.commandLine.appendSwitch("log-level", "3")
@@ -198,6 +201,12 @@ app.whenReady().then(() => {
   registerIpcHandlers()
 
   createWindow()
+
+  // Set session-level user agent so all requests (including webview guests)
+  // present as a standard Chrome browser to Cloudflare and other anti-bot systems.
+  if (win) {
+    win.webContents.session.setUserAgent(CHROME_UA)
+  }
 
   // Intercept target="_blank" links inside <webview> elements. When a guest
   // page tries to open a new window, deny it and send the URL to the renderer

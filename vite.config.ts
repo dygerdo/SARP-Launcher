@@ -66,7 +66,10 @@ export default defineConfig(({ mode }) => {
           },
         },
         preload: {
-          input: "electron/preload.ts",
+          input: {
+            preload: "electron/preload.ts",
+            "webview-preload": "electron/webview-preload.ts",
+          },
           vite: {
             define: mainEnvDefines,
             build: {

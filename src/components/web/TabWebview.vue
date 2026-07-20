@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { onUnmounted } from "vue"
+import { ref, onMounted, onUnmounted } from "vue"
 import { useWebTabsStore, type WebTab } from "@/stores/webTabs"
 
 const props = defineProps<{ tab: WebTab }>()
 
 const webTabs = useWebTabsStore()
+const preloadPath = ref("")
+
+onMounted(async () => {
+  preloadPath.value = await window.launcher.getWebviewPreloadPath()
+})
 
 interface WebviewEl {
   src: string
@@ -156,9 +161,11 @@ onUnmounted(() => {
     <!-- Webview -->
     <webview
       v-show="!tab.isLoading && !tab.hasError"
-      :ref="onRef"
+      ref="onRef"
       :src="tab.url"
+      :preload="preloadPath ? `file:///${preloadPath.replace(/\\/g, '/')}` : undefined"
       useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36"
+      partition="persist:sarp"
       style="position: absolute; inset: 0; width: 100%; height: 100%; border: none"
       allowpopups
     />

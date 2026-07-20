@@ -115,6 +115,8 @@ const launcherApi = {
 
   openExternal: (url: string): void => ipcRenderer.send(IPC.SHELL_OPEN_EXTERNAL, url),
 
+  getWebviewPreloadPath: (): Promise<string> => ipcRenderer.invoke(IPC.WEBVIEW_PRELOAD_PATH),
+
   getAppVersion: (): Promise<string> => ipcRenderer.invoke(IPC.APP_GET_VERSION),
 
   onUpdaterAvailable: (callback: (info: UpdaterAvailable) => void): (() => void) => {

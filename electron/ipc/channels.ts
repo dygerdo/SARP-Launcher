@@ -45,6 +45,7 @@ export const IPC = {
   UPDATES_CHECK_MOD: "updates:check-mod",
   SECURITY_ALERT: "security:alert",
   WEBVIEW_NAVIGATE: "webview:navigate",
+  WEBVIEW_PRELOAD_PATH: "webview:preload-path",
 } as const
 
 export interface GameStatus {

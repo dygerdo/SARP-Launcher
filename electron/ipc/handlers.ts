@@ -24,6 +24,7 @@ import { quitAndInstall } from "../services/updater"
 import path from "node:path"
 import fs from "node:fs"
 import { execSync } from "node:child_process"
+import { fileURLToPath } from "node:url"
 import type { Mod, ModFile, SystemDependency, DepStatus } from "../../src/types/mods"
 import {
   appService,
@@ -34,6 +35,9 @@ import {
   modController,
   updateController,
 } from "../dependencies"
+
+const _dirname =
+  typeof __dirname !== "undefined" ? __dirname : path.dirname(fileURLToPath(import.meta.url))
 
 export function registerIpcHandlers() {
   ipcMain.handle(IPC.STORE_GET, async (_event, key: keyof LauncherStoreSchema) => {
@@ -151,6 +155,12 @@ export function registerIpcHandlers() {
   })
 
   ipcMain.handle(IPC.APP_GET_VERSION, async (): Promise<string> => appService.getVersion())
+
+  ipcMain.handle(IPC.WEBVIEW_PRELOAD_PATH, async (): Promise<string> => {
+    const packed = path.join(process.resourcesPath, "dist-electron", "webview-preload.js")
+    if (fs.existsSync(packed)) return packed
+    return path.join(_dirname, "webview-preload.js")
+  })
 
   ipcMain.handle(IPC.UPDATER_QUIT_AND_INSTALL, async () => {
     quitAndInstall()
